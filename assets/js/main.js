@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'settings', url: `${p}settings.html`, icon: 'fas fa-gear', i18nKey: 'menuSettings' },
         { id: 'theme', action: 'theme', icon: currentTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun', i18nKey: 'menuTheme' },
         { id: 'language', action: 'language', icon: 'fas fa-globe', i18nKey: 'menuLanguage' },
-        { id: 'shopping-now', url: 'https://shsbazar.pages.dev/', icon: 'fas fa-bag-shopping', i18nKey: 'menuShoppingNow', external: true },
+        { id: 'shopping-now', url: 'https://marketkoro.pages.dev/', icon: 'fas fa-bag-shopping', i18nKey: 'menuShoppingNow', external: true },
         { id: 'student-tools-ai', url: 'https://studentstoolsorai.pages.dev/', icon: 'fas fa-graduation-cap', i18nKey: 'menuStudentToolsAi', external: true }
       ];
 
