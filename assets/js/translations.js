@@ -321,6 +321,7 @@ const translations = {
     mobileNavServices: "Services",
     mobileNavStartProject: "Start Project",
     mobileNavLivePreview: "Live Preview",
+    mobileNavLiveChat: "Live Chat",
     mobileNavAccount: "Account",
     mobileNavConnect: "Connect",
 
@@ -667,6 +668,7 @@ const translations = {
     mobileNavServices: "সার্ভিস",
     mobileNavStartProject: "প্রজেক্ট শুরু করুন",
     mobileNavLivePreview: "লাইভ প্রিভিউ",
+    mobileNavLiveChat: "লাইভ চ্যাট",
     mobileNavAccount: "অ্যাকাউন্ট",
     mobileNavConnect: "কানেক্ট",
 
