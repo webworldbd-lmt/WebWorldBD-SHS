@@ -2051,7 +2051,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Fallback to sarip doc if users/{uid} does not exist yet
                     const saripRef = mod.doc(mod.db, 'sarip', 'sarip');
                     mod.getDoc(saripRef).then(saripSnap => {
-                      if (saripSnap.exists() && (saripSnap.data().uid === user.uid || user.email === 'onlyphone678@gmail.com')) {
+                      if (saripSnap.exists() && (saripSnap.data().uid === user.uid || user.uid === 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' || user.email === 'webworldbd.lmt@gmail.com' || user.email === 'onlyphone678@gmail.com')) {
                         const sData = saripSnap.data();
                         if (sData.username) {
                           usernameHandle = sData.username;
@@ -2918,6 +2918,10 @@ Website: https://webworldbd.com
           return;
         }
 
+        const ADMIN_UID = 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2';
+        const ADMIN_EMAIL = 'webworldbd.lmt@gmail.com';
+        const isSuperAdmin = (u) => u && (u.uid === ADMIN_UID || u.email === ADMIN_EMAIL || u.email === 'onlyphone678@gmail.com');
+
         let isAdmin = false;
         try {
           if (mod.db && mod.doc && mod.getDoc) {
@@ -2925,17 +2929,17 @@ Website: https://webworldbd.com
             const userSnap = await mod.getDoc(userDocRef);
             if (userSnap.exists() && userSnap.data()) {
               const uData = userSnap.data();
-              if (uData.role === 'admin' || user.email === 'onlyphone678@gmail.com') {
+              if (uData.role === 'admin' || isSuperAdmin(user)) {
                 isAdmin = true;
-                if (uData.role !== 'admin' && user.email === 'onlyphone678@gmail.com' && mod.setDoc) {
+                if (uData.role !== 'admin' && isSuperAdmin(user) && mod.setDoc) {
                   await mod.setDoc(userDocRef, { role: 'admin' }, { merge: true });
                 }
               }
-            } else if (user.email === 'onlyphone678@gmail.com') {
+            } else if (isSuperAdmin(user)) {
               isAdmin = true;
               if (mod.setDoc) {
                 await mod.setDoc(userDocRef, {
-                  displayName: user.displayName || 'Admin',
+                  displayName: user.displayName || 'SHAFAET HOSSEN SARIP',
                   email: user.email,
                   role: 'admin',
                   createdAt: new Date().toISOString()
@@ -2945,7 +2949,7 @@ Website: https://webworldbd.com
           }
         } catch (e) {
           console.error('Error fetching admin role document:', e);
-          if (user.email === 'onlyphone678@gmail.com') isAdmin = true;
+          if (isSuperAdmin(user)) isAdmin = true;
         }
 
         if (adminLoader) adminLoader.style.display = 'none';
@@ -4093,7 +4097,7 @@ Website: https://webworldbd.com
           // Fallback to sarip doc if user doc does not exist
           const saripRef = mod.doc(mod.db, 'sarip', 'sarip');
           mod.getDoc(saripRef).then(saripSnap => {
-            if (saripSnap.exists() && (saripSnap.data().uid === user.uid || user.email === 'onlyphone678@gmail.com')) {
+            if (saripSnap.exists() && (saripSnap.data().uid === user.uid || user.uid === 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' || user.email === 'webworldbd.lmt@gmail.com' || user.email === 'onlyphone678@gmail.com')) {
               const sData = saripSnap.data();
               if (sData.username) initialUsername = sData.username;
               const uPhone = sData.phoneNumber || sData.phone;
