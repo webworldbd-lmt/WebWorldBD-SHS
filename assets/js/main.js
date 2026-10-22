@@ -954,16 +954,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let cardClass = '';
 
     switch (projectId) {
-      case 'shs-bazar':
-        cardClass = 'thumb-shs-bazar';
+      case 'market-koro':
+        cardClass = 'thumb-market-koro';
         patternSvg = `
           <svg class="thumb-pattern" viewBox="0 0 400 200" preserveAspectRatio="none">
             <defs>
-              <pattern id="grid-pattern-shs" width="20" height="20" patternUnits="userSpaceOnUse">
+              <pattern id="grid-pattern-market" width="20" height="20" patternUnits="userSpaceOnUse">
                 <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255, 255, 255, 0.22)" stroke-width="1"/>
               </pattern>
             </defs>
-            <rect width="100%" height="100%" fill="url(#grid-pattern-shs)"/>
+            <rect width="100%" height="100%" fill="url(#grid-pattern-market)"/>
             <circle cx="200" cy="100" r="110" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4 4"/>
             <line x1="0" y1="100" x2="400" y2="100" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
           </svg>
@@ -1056,7 +1056,7 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
 
       default:
-        cardClass = 'thumb-shs-bazar';
+        cardClass = 'thumb-market-koro';
         patternSvg = '';
         iconSvg = `<i class="fas fa-code" style="font-size:3rem; color:#fff;"></i>`;
     }
@@ -1210,7 +1210,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!container) return;
 
     const urlParams = new URLSearchParams(window.location.search);
-    const projectId = urlParams.get('id') || 'shs-bazar';
+    const projectId = urlParams.get('id') || 'market-koro';
 
     const project = portfolioData.projects.find(p => p.id === projectId) || portfolioData.projects[0];
 
