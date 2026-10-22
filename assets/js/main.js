@@ -218,6 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'home', url: `${p}index.html`, icon: 'fas fa-house', i18nKey: 'menuHome' },
         { id: 'services', url: `${p}services.html`, icon: 'fas fa-layer-group', i18nKey: 'menuServices' },
         { id: 'start-project', url: `${p}start-project.html`, icon: 'fas fa-rocket', i18nKey: 'menuStartProject' },
+        { id: 'live-chat', url: 'https://wa.me/8801342697743', icon: 'fas fa-comments', i18nKey: 'menuLiveChat', external: true },
         { id: 'projects', url: `${p}projects.html`, icon: 'fas fa-desktop', i18nKey: 'menuLivePreview' },
         { id: 'connect', url: `${p}contact.html`, icon: 'fas fa-link', i18nKey: 'menuConnect' },
         { id: 'settings', url: `${p}settings.html`, icon: 'fas fa-gear', i18nKey: 'menuSettings' },
