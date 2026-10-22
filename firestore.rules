@@ -9,6 +9,8 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
+        request.auth.uid == 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' ||
+        request.auth.token.email == 'webworldbd.lmt@gmail.com' ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
         request.auth.token.email == 'onlyphone678@gmail.com'
@@ -25,7 +27,11 @@ service cloud.firestore {
       allow create: if isSignedIn() && isOwner(userId) && (
         !('role' in request.resource.data) ||
         request.resource.data.role == 'user' ||
-        (request.resource.data.role == 'admin' && request.auth.token.email == 'onlyphone678@gmail.com')
+        (request.resource.data.role == 'admin' && (
+          request.auth.uid == 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' ||
+          request.auth.token.email == 'webworldbd.lmt@gmail.com' ||
+          request.auth.token.email == 'onlyphone678@gmail.com'
+        ))
       );
       allow update: if isSignedIn() && (
         isAdmin() ||
@@ -82,10 +88,9 @@ service cloud.firestore {
     }
 
     // Live Chat Collection & Messages Subcollection
-    // Define ADMIN_UID constant (placeholder)
     function isChatAdmin() {
       return isSignedIn() && (
-        request.auth.uid == 'ADMIN_UID' || isAdmin()
+        request.auth.uid == 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' || isAdmin()
       );
     }
 
