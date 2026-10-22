@@ -77,6 +77,11 @@
         </a>
 
         <span class="dash-nav-group-title">Finance & Support</span>
+        <a href="#live-chat" class="dash-nav-item" data-nav="live-chat" style="position: relative;">
+          <i class="fas fa-headset"></i>
+          <span>লাইভ চ্যাট</span>
+          <span class="dash-nav-badge" id="admin-unread-chat-count" style="display: none; background: #EF4444; color: #fff;">0</span>
+        </a>
         <a href="#payments" class="dash-nav-item" data-nav="payments">
           <i class="fas fa-wallet"></i>
           <span>Payments</span>
@@ -369,6 +374,64 @@
           </div>
         </div>
 
+        <!-- LIVE CHAT SECTION -->
+        <div id="admin-section-live-chat" class="admin-tab-section" style="display: none;">
+          <div class="dash-table-card" style="padding: 0; overflow: hidden;">
+            <div class="dash-card-header" style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-glass); flex-wrap: wrap; gap: 1rem;">
+              <h3 class="dash-card-title"><i class="fas fa-comments" style="color: var(--accent-blue);"></i> লাইভ চ্যাট কন্ট্রোল প্যানেল</h3>
+              <button type="button" class="btn btn-primary" id="btn-admin-new-chat">
+                <i class="fas fa-plus"></i> নতুন মেসেজ
+              </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 320px 1fr; min-height: 520px; background: var(--bg-card);" id="admin-chat-layout">
+              <!-- Left Thread List -->
+              <div style="border-right: 1px solid var(--border-glass); display: flex; flex-direction: column;" id="admin-threads-sidebar">
+                <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-glass); font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+                  ক্লায়েন্ট চ্যাট লিস্ট
+                </div>
+                <div id="admin-threads-list-container" style="flex: 1; overflow-y: auto;">
+                  <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--accent-blue); margin-bottom: 0.5rem; display: block;"></i>
+                    চ্যাট তথ্য লোড হচ্ছে...
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Chat History & Reply Panel -->
+              <div style="display: flex; flex-direction: column; background: rgba(0,0,0,0.02);" id="admin-chat-main-panel">
+                <div id="admin-chat-active-header" style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-glass); background: var(--bg-glass); display: flex; align-items: center; justify-content: space-between;">
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div id="admin-chat-active-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+                      U
+                    </div>
+                    <div>
+                      <div id="admin-chat-active-name" style="font-weight: 700; font-size: 1.05rem; color: var(--text-main);">একটি চ্যাট সিলেক্ট করুন</div>
+                      <div id="admin-chat-active-email" style="font-size: 0.8rem; color: var(--text-muted);">ক্লিক করে মেসেজ স্ট্রিম দেখুন</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="admin-chat-messages-box" style="flex: 1; padding: 1.25rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.85rem;">
+                  <div style="margin: auto; text-align: center; color: var(--text-muted); padding: 3rem;">
+                    <i class="fas fa-comments" style="font-size: 3rem; color: var(--accent-blue); margin-bottom: 1rem; display: block;"></i>
+                    <p style="font-size: 1.05rem; font-weight: 600;">মেসেজ দেখতে বাম পাশ থেকে চ্যাট নির্বাচন করুন</p>
+                  </div>
+                </div>
+
+                <div id="admin-chat-input-area" style="padding: 1rem; border-top: 1px solid var(--border-glass); background: var(--bg-glass); display: none;">
+                  <form id="admin-chat-reply-form" style="display: flex; gap: 0.6rem;">
+                    <input type="text" id="admin-chat-reply-input" class="form-control" placeholder="ক্লায়েন্টকে উত্তর দিন..." autocomplete="off" style="border-radius: 24px;" required />
+                    <button type="submit" class="btn btn-primary" style="border-radius: 24px; padding: 0.65rem 1.4rem;">
+                      <i class="fas fa-paper-plane"></i> পাঠান
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 5. MESSAGES & SUPPORT SECTION -->
         <div id="admin-section-messages" class="admin-tab-section" style="display: none;">
           <div class="dash-table-card">
@@ -492,6 +555,32 @@
           <button type="submit" class="btn btn-primary" id="admin-project-save-btn" style="padding: 0.65rem 1.5rem;">Save Project</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Admin Start New Chat Modal -->
+  <div class="settings-modal-overlay" id="admin-new-chat-modal">
+    <div class="settings-modal-card glass-card" style="max-width: 520px; width: 100%;">
+      <div class="dash-card-header" style="margin-bottom: 1.25rem;">
+        <h3 class="dash-card-title"><i class="fas fa-comment-medical" style="color: var(--accent-blue);"></i> নতুন ক্লায়েন্ট চ্যাট শুরু করুন</h3>
+        <button type="button" class="alert-close-btn btn-modal-cancel" aria-label="Close modal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <input type="text" id="admin-user-search-input" class="form-control" placeholder="ব্যবহারকারীর নাম বা ইমেইল দিয়ে খুঁজুন..." style="border-radius: var(--radius-md);">
+      </div>
+
+      <div id="admin-users-pick-list" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem;">
+        <div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+          <i class="fas fa-spinner fa-spin" style="color: var(--accent-blue);"></i> ইউজার লিস্ট লোড হচ্ছে...
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary btn-modal-cancel" style="padding: 0.6rem 1.25rem;">বন্ধ করুন</button>
+      </div>
     </div>
   </div>
 

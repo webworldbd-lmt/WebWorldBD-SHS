@@ -82,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAccountDashboardUI();
   initAdminDashboardUI();
   initEditProfileModalLogic();
+  initUserLiveChatModule();
 
   // Dynamic Content Rendering
   if (document.getElementById('services-grid')) renderServices();
@@ -218,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'home', url: `${p}index.html`, icon: 'fas fa-house', i18nKey: 'menuHome' },
         { id: 'services', url: `${p}services.html`, icon: 'fas fa-layer-group', i18nKey: 'menuServices' },
         { id: 'start-project', url: `${p}start-project.html`, icon: 'fas fa-rocket', i18nKey: 'menuStartProject' },
-        { id: 'live-chat', url: 'https://wa.me/8801342697743', icon: 'fas fa-comments', i18nKey: 'menuLiveChat', external: true },
+        { id: 'live-chat', action: 'live-chat', icon: 'fas fa-comments', i18nKey: 'menuLiveChat' },
         { id: 'projects', url: `${p}projects.html`, icon: 'fas fa-desktop', i18nKey: 'menuLivePreview' },
         { id: 'connect', url: `${p}contact.html`, icon: 'fas fa-link', i18nKey: 'menuConnect' },
         { id: 'settings', url: `${p}settings.html`, icon: 'fas fa-gear', i18nKey: 'menuSettings' },
@@ -303,6 +304,18 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
           }
 
+          if (item.action === 'live-chat') {
+            return `
+              <button type="button" class="three-dots-menu-item" data-menu-id="${item.id}" style="position: relative;">
+                <div class="three-dots-icon-box">
+                  <i class="${item.icon} three-dots-menu-icon"></i>
+                </div>
+                <span data-i18n="${item.i18nKey}">${label}</span>
+                <span class="live-chat-drawer-badge" id="live-chat-drawer-badge" style="display:none; position: absolute; right: 15px; width: 9px; height: 9px; background: #EF4444; border-radius: 50%;"></span>
+              </button>
+            `;
+          }
+
           if (item.action === 'theme') {
             const themeLabel = currentTheme === 'dark' ? (currentLang === 'bn' ? 'ডার্ক' : 'Dark') : (currentLang === 'bn' ? 'লাইট' : 'Light');
             return `
@@ -362,6 +375,17 @@ document.addEventListener('DOMContentLoaded', () => {
           closeThreeDotsMenu();
         });
       });
+
+      const liveChatBtn = drawerBody.querySelector('[data-menu-id="live-chat"]');
+      if (liveChatBtn) {
+        liveChatBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          closeThreeDotsMenu();
+          if (window.openUserLiveChat) {
+            window.openUserLiveChat();
+          }
+        });
+      }
 
       const themeBtn = drawerBody.querySelector('.three-dots-theme-btn');
       if (themeBtn) {
@@ -778,6 +802,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
     }
+
+    navItems.forEach(item => {
+      if (item.dataset.nav === 'live-chat') {
+        item.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (window.openUserLiveChat) {
+            window.openUserLiveChat();
+          }
+        });
+      }
+    });
 
     updateActiveBottomNav();
   }
@@ -2929,6 +2964,7 @@ Website: https://webworldbd.com
         initAdminServicesSync();
         initAdminUsersSync();
         initAdminMessagesSync();
+        initAdminLiveChatSync();
         initAdminModalControls();
       });
     }
@@ -2941,6 +2977,7 @@ Website: https://webworldbd.com
         'projects': document.getElementById('admin-section-projects'),
         'clients': document.getElementById('admin-section-clients'),
         'services': document.getElementById('admin-section-services'),
+        'live-chat': document.getElementById('admin-section-live-chat'),
         'messages': document.getElementById('admin-section-messages')
       };
 
@@ -2970,6 +3007,7 @@ Website: https://webworldbd.com
               'projects': 'Projects Management',
               'clients': 'Registered Clients & Users',
               'services': 'Services & Cover Images',
+              'live-chat': 'লাইভ চ্যাট ম্যানেজমেন্ট',
               'messages': 'Support Messages & Inquiries'
             };
             pageTitle.textContent = titles[navTarget] || 'Admin Control Panel';
@@ -3708,6 +3746,305 @@ Website: https://webworldbd.com
         });
       }, (err) => {
         console.error('Error listening to messages collection:', err);
+      });
+    }
+
+    /* Admin Live Chat Management Submodule */
+    let activeAdminSelectedUserId = null;
+    let activeAdminChatMessagesUnsubscribe = null;
+    let registeredUsersCache = [];
+
+    function initAdminLiveChatSync() {
+      const mod = window.FirebaseModule;
+      if (!mod || !mod.db || !mod.collection || !mod.onSnapshot || !mod.query || !mod.orderBy) return;
+
+      const chatsCol = mod.collection(mod.db, 'chats');
+      const q = mod.query(chatsCol, mod.orderBy('lastMessageAt', 'desc'));
+
+      mod.onSnapshot(q, (snapshot) => {
+        let unreadCount = 0;
+        const threads = [];
+
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          data.userId = doc.id;
+          threads.push(data);
+          if (data.unreadByAdmin) {
+            unreadCount++;
+          }
+        });
+
+        // Update badge near Admin Panel "লাইভ চ্যাট" nav entry
+        const badgeEl = document.getElementById('admin-unread-chat-count');
+        if (badgeEl) {
+          if (unreadCount > 0) {
+            badgeEl.textContent = unreadCount;
+            badgeEl.style.display = 'inline-block';
+          } else {
+            badgeEl.style.display = 'none';
+          }
+        }
+
+        renderAdminThreadsList(threads);
+      }, (err) => {
+        console.error('Error listening to admin chats collection:', err);
+      });
+
+      // Cache users list for "নতুন মেসেজ" modal
+      mod.onSnapshot(mod.collection(mod.db, 'users'), (snap) => {
+        registeredUsersCache = [];
+        snap.forEach(d => {
+          const u = d.data();
+          u.uid = d.id;
+          registeredUsersCache.push(u);
+        });
+      });
+    }
+
+    function renderAdminThreadsList(threads) {
+      const container = document.getElementById('admin-threads-list-container');
+      if (!container) return;
+
+      if (threads.length === 0) {
+        container.innerHTML = `
+          <div style="padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+            কোন চ্যাট থ্রেড নেই। "নতুন মেসেজ" বাটনে ক্লিক করে ক্লায়েন্টকে বার্তা পাঠান।
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = threads.map(t => {
+        const name = t.userName || t.userEmail || 'Client';
+        const lastMsg = t.lastMessage || 'No messages yet';
+        const isUnread = !!t.unreadByAdmin;
+        const isActive = t.userId === activeAdminSelectedUserId;
+
+        const timeStr = t.lastMessageAt ? new Date(t.lastMessageAt.seconds ? t.lastMessageAt.seconds * 1000 : t.lastMessageAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+        const initial = (name.trim().charAt(0) || 'C').toUpperCase();
+
+        return `
+          <div class="admin-thread-item ${isActive ? 'active' : ''}" data-user-id="${t.userId}" style="padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-glass); cursor: pointer; display: flex; align-items: center; gap: 0.75rem; background: ${isActive ? 'rgba(56,189,248,0.12)' : (isUnread ? 'rgba(56,189,248,0.05)' : 'transparent')}; position: relative; transition: background 0.2s ease;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+              ${initial}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                <span style="font-weight: ${isUnread ? '700' : '600'}; font-size: 0.92rem; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(name)}</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); flex-shrink: 0; margin-left: 0.4rem;">${timeStr}</span>
+              </div>
+              <div style="font-size: 0.82rem; color: ${isUnread ? 'var(--text-main)' : 'var(--text-muted)'}; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-weight: ${isUnread ? '600' : 'normal'};">
+                ${t.lastSenderRole === 'admin' ? ' You: ' : ''}${escapeHtml(lastMsg)}
+              </div>
+            </div>
+            ${isUnread ? `<span style="width: 9px; height: 9px; background: #EF4444; border-radius: 50%; flex-shrink: 0;"></span>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      // Click event for threads
+      container.querySelectorAll('.admin-thread-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const uid = el.getAttribute('data-user-id');
+          const thread = threads.find(t => t.userId === uid);
+          selectAdminThread(uid, thread ? thread.userName : 'Client', thread ? thread.userEmail : '');
+        });
+      });
+    }
+
+    async function selectAdminThread(userId, userName, userEmail) {
+      activeAdminSelectedUserId = userId;
+
+      const mod = window.FirebaseModule;
+      if (!mod || !mod.db) return;
+
+      // Update UI Header
+      const headerName = document.getElementById('admin-chat-active-name');
+      const headerEmail = document.getElementById('admin-chat-active-email');
+      const headerAvatar = document.getElementById('admin-chat-active-avatar');
+      const inputArea = document.getElementById('admin-chat-input-area');
+
+      if (headerName) headerName.textContent = userName || 'Client User';
+      if (headerEmail) headerEmail.textContent = userEmail || userId;
+      if (headerAvatar) headerAvatar.textContent = (userName ? userName.trim().charAt(0) : 'U').toUpperCase();
+      if (inputArea) inputArea.style.display = 'block';
+
+      // Mark unreadByAdmin: false
+      const chatDocRef = mod.doc(mod.db, 'chats', userId);
+      await mod.updateDoc(chatDocRef, {
+        unreadByAdmin: false
+      }).catch(e => console.warn('Mark chat read error:', e));
+
+      // Stream messages
+      const messagesCol = mod.collection(mod.db, 'chats', userId, 'messages');
+      const q = mod.query(messagesCol, mod.orderBy('createdAt', 'asc'));
+
+      if (activeAdminChatMessagesUnsubscribe) activeAdminChatMessagesUnsubscribe();
+
+      activeAdminChatMessagesUnsubscribe = mod.onSnapshot(q, (snapshot) => {
+        renderAdminChatMessages(snapshot);
+      }, (err) => {
+        console.error('Error streaming thread messages for admin:', err);
+      });
+    }
+
+    function renderAdminChatMessages(snapshot) {
+      const container = document.getElementById('admin-chat-messages-box');
+      if (!container) return;
+
+      if (snapshot.empty) {
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); margin: auto; padding: 2rem;">
+            <i class="fas fa-paper-plane" style="font-size: 2rem; color: var(--accent-blue); margin-bottom: 0.5rem; display: block;"></i>
+            <p>এই থ্রেডে এখনো কোন মেসেজ নেই। নিচে লিখুন এবং প্রথম মেসেজ পাঠান!</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const role = data.senderRole || 'user';
+        const isAdmin = role === 'admin';
+        const timeStr = data.createdAt ? new Date(data.createdAt.seconds ? data.createdAt.seconds * 1000 : data.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+        html += `
+          <div class="chat-msg-row ${isAdmin ? 'msg-user' : 'msg-admin'}">
+            <span class="chat-sender-name">${isAdmin ? 'SHAFAET HOSSEN SARIP (Admin)' : 'Client'}</span>
+            <div class="chat-bubble">
+              ${escapeHtml(data.text || '')}
+              <span class="chat-msg-time">${timeStr}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // Admin Chat Reply Form Submit Handler
+    const replyForm = document.getElementById('admin-chat-reply-form');
+    if (replyForm) {
+      replyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!activeAdminSelectedUserId) return;
+
+        const input = document.getElementById('admin-chat-reply-input');
+        const text = input ? input.value.trim() : '';
+
+        if (!text) return;
+
+        input.value = '';
+
+        const mod = window.FirebaseModule;
+        if (!mod || !mod.db) return;
+
+        try {
+          const chatDocRef = mod.doc(mod.db, 'chats', activeAdminSelectedUserId);
+          const messagesCol = mod.collection(mod.db, 'chats', activeAdminSelectedUserId, 'messages');
+
+          // Add admin message
+          await mod.addDoc(messagesCol, {
+            senderId: 'admin',
+            senderRole: 'admin',
+            text: text,
+            createdAt: mod.serverTimestamp ? mod.serverTimestamp() : new Date().toISOString(),
+            read: false
+          });
+
+          // Update parent chat doc
+          await mod.updateDoc(chatDocRef, {
+            lastMessage: text,
+            lastMessageAt: mod.serverTimestamp ? mod.serverTimestamp() : new Date().toISOString(),
+            lastSenderRole: 'admin',
+            unreadByUser: true,
+            unreadByAdmin: false
+          });
+
+        } catch (err) {
+          console.error('Error sending admin reply message:', err);
+          if (window.showToast) window.showToast('মেসেজ পাঠাতে সমস্যা হয়েছে: ' + err.message, 'error');
+        }
+      });
+    }
+
+    // New Message Modal Handlers
+    const newChatBtn = document.getElementById('btn-admin-new-chat');
+    const newChatModal = document.getElementById('admin-new-chat-modal');
+    const userSearchInput = document.getElementById('admin-user-search-input');
+
+    if (newChatBtn && newChatModal) {
+      newChatBtn.addEventListener('click', () => {
+        renderUsersPickList(registeredUsersCache);
+        newChatModal.classList.add('active');
+      });
+    }
+
+    if (userSearchInput) {
+      userSearchInput.addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase().trim();
+        const filtered = registeredUsersCache.filter(u => {
+          const name = (u.displayName || u.fullName || '').toLowerCase();
+          const email = (u.email || '').toLowerCase();
+          return name.includes(q) || email.includes(q);
+        });
+        renderUsersPickList(filtered);
+      });
+    }
+
+    function renderUsersPickList(users) {
+      const container = document.getElementById('admin-users-pick-list');
+      if (!container) return;
+
+      if (users.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">কোন ব্যবহারকারী পাওয়া যায়নি।</div>`;
+        return;
+      }
+
+      container.innerHTML = users.map(u => {
+        const name = u.displayName || u.fullName || 'Client User';
+        const email = u.email || 'N/A';
+        const initial = (name.trim().charAt(0) || 'U').toUpperCase();
+
+        return `
+          <div class="user-pick-item" data-uid="${u.uid}" data-name="${escapeHtml(name)}" data-email="${escapeHtml(email)}" style="padding: 0.75rem 1rem; border-radius: var(--radius-md); background: var(--bg-glass); border: 1px solid var(--border-glass); cursor: pointer; display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--accent-blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700;">${initial}</div>
+            <div>
+              <div style="font-weight: 700; font-size: 0.92rem; color: var(--text-main);">${escapeHtml(name)}</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">${escapeHtml(email)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.user-pick-item').forEach(item => {
+        item.addEventListener('click', async () => {
+          const uid = item.getAttribute('data-uid');
+          const name = item.getAttribute('data-name');
+          const email = item.getAttribute('data-email');
+
+          const mod = window.FirebaseModule;
+          if (mod && mod.db) {
+            const chatRef = mod.doc(mod.db, 'chats', uid);
+            const chatSnap = await mod.getDoc(chatRef);
+            if (!chatSnap.exists()) {
+              await mod.setDoc(chatRef, {
+                userName: name,
+                userEmail: email,
+                lastMessage: '',
+                lastMessageAt: mod.serverTimestamp ? mod.serverTimestamp() : new Date().toISOString(),
+                lastSenderRole: 'admin',
+                unreadByAdmin: false,
+                unreadByUser: false
+              });
+            }
+          }
+
+          if (newChatModal) newChatModal.classList.remove('active');
+          selectAdminThread(uid, name, email);
+        });
       });
     }
 
@@ -4524,5 +4861,282 @@ Website: https://webworldbd.com
         }
       });
     }
+  }
+
+  /* --------------------------------------------------------------------------
+     12. User Live Chat Module (1-on-1 with Admin)
+     -------------------------------------------------------------------------- */
+  function initUserLiveChatModule() {
+    let activeChatUnsubscribe = null;
+    let activeUserDocUnsubscribe = null;
+
+    // Create Modal Elements dynamically if not in DOM
+    let chatModal = document.getElementById('user-live-chat-modal');
+    if (!chatModal) {
+      chatModal = document.createElement('div');
+      chatModal.id = 'user-live-chat-modal';
+      chatModal.className = 'chat-modal-overlay';
+      chatModal.innerHTML = `
+        <div class="chat-modal-card">
+          <div class="chat-header">
+            <div class="chat-header-user">
+              <img src="profile.jpg" alt="SHAFAET HOSSEN SARIP" class="chat-avatar">
+              <div class="chat-header-info">
+                <span class="chat-header-name">SHAFAET HOSSEN SARIP</span>
+                <span class="chat-header-status"><span class="chat-status-dot"></span> Admin (Online)</span>
+              </div>
+            </div>
+            <button type="button" class="chat-close-btn" id="user-chat-close-btn" aria-label="Close Chat">
+              <i class="fas fa-xmark"></i>
+            </button>
+          </div>
+          <div class="chat-messages-container" id="user-chat-messages-container">
+            <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
+              <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--accent-blue); margin-bottom: 0.5rem; display: block;"></i>
+              মেসেজ সমুহ লোড হচ্ছে...
+            </div>
+          </div>
+          <div class="chat-footer">
+            <form id="user-chat-form" class="chat-input-form">
+              <input type="text" id="user-chat-input" placeholder="মেসেজ লিখুন..." autocomplete="off" required />
+              <button type="submit" class="chat-send-btn" id="user-chat-send-btn" aria-label="Send Message">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(chatModal);
+
+      const closeBtn = document.getElementById('user-chat-close-btn');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', closeUserLiveChat);
+      }
+
+      chatModal.addEventListener('click', (e) => {
+        if (e.target === chatModal) closeUserLiveChat();
+      });
+    }
+
+    function openUserLiveChat() {
+      const user = window.currentUserState;
+      if (!user) {
+        sessionStorage.setItem('pending_live_chat_open', 'true');
+        if (window.showToast) {
+          window.showToast(currentLang === 'bn' ? 'লাইভ চ্যাট ব্যবহার করতে প্রথমে লগইন করুন।' : 'Please login first to access Live Chat.', 'info');
+        }
+        window.location.href = 'account.html';
+        return;
+      }
+
+      chatModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      ensureUserChatDocAndListen(user);
+    }
+    window.openUserLiveChat = openUserLiveChat;
+
+    function closeUserLiveChat() {
+      chatModal.classList.remove('active');
+      document.body.style.overflow = '';
+      if (activeChatUnsubscribe) {
+        activeChatUnsubscribe();
+        activeChatUnsubscribe = null;
+      }
+    }
+
+    async function ensureUserChatDocAndListen(user) {
+      const mod = window.FirebaseModule;
+      if (!mod || !mod.db || !mod.doc || !mod.getDoc || !mod.setDoc || !mod.collection || !mod.onSnapshot || !mod.query || !mod.orderBy) return;
+
+      const chatDocRef = mod.doc(mod.db, 'chats', user.uid);
+
+      try {
+        const snap = await mod.getDoc(chatDocRef);
+        const displayName = user.displayName || (user.email ? user.email.split('@')[0] : 'Client User');
+        const displayEmail = user.email || '';
+
+        if (!snap.exists()) {
+          await mod.setDoc(chatDocRef, {
+            userName: displayName,
+            userEmail: displayEmail,
+            lastMessage: '',
+            lastMessageAt: mod.serverTimestamp ? mod.serverTimestamp() : new Date().toISOString(),
+            lastSenderRole: 'user',
+            unreadByAdmin: false,
+            unreadByUser: false
+          });
+        } else {
+          // Clear unreadByUser flag when user opens chat
+          await mod.updateDoc(chatDocRef, {
+            unreadByUser: false,
+            userName: displayName,
+            userEmail: displayEmail
+          }).catch(e => console.warn('Update unreadByUser error:', e));
+        }
+
+        // Listen for messages in real-time
+        const messagesCol = mod.collection(mod.db, 'chats', user.uid, 'messages');
+        const q = mod.query(messagesCol, mod.orderBy('createdAt', 'asc'));
+
+        if (activeChatUnsubscribe) activeChatUnsubscribe();
+
+        activeChatUnsubscribe = mod.onSnapshot(q, (snapshot) => {
+          renderUserMessages(snapshot);
+        }, (error) => {
+          console.error('Error listening to user chat messages:', error);
+        });
+
+      } catch (err) {
+        console.error('Error initializing user chat doc:', err);
+      }
+    }
+
+    function renderUserMessages(snapshot) {
+      const container = document.getElementById('user-chat-messages-container');
+      if (!container) return;
+
+      if (snapshot.empty) {
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); margin: auto; padding: 2rem;">
+            <i class="fas fa-comments" style="font-size: 2.5rem; color: var(--accent-blue); margin-bottom: 0.75rem; display: block;"></i>
+            <p style="font-size: 0.95rem; font-weight: 600;">👋 ${currentLang === 'bn' ? 'হাই! কিভাবে আপনাকে সাহায্য করতে পারি?' : 'Hi! How can I help you today?'}</p>
+            <p style="font-size: 0.82rem; margin-top: 0.25rem;">${currentLang === 'bn' ? 'এখানে মেসেজ লিখুন, এডমিন সরাসরি উত্তর দিবেন।' : 'Write a message below, admin will reply directly.'}</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const role = data.senderRole || 'user';
+        const isUser = role === 'user';
+        const timeStr = data.createdAt ? new Date(data.createdAt.seconds ? data.createdAt.seconds * 1000 : data.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+        html += `
+          <div class="chat-msg-row ${isUser ? 'msg-user' : 'msg-admin'}">
+            <span class="chat-sender-name">${isUser ? 'You' : 'SHAFAET HOSSEN SARIP (Admin)'}</span>
+            <div class="chat-bubble">
+              ${escapeHtml(data.text || '')}
+              <span class="chat-msg-time">${timeStr}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // User Message Submit Handler
+    const userChatForm = document.getElementById('user-chat-form');
+    if (userChatForm) {
+      userChatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const input = document.getElementById('user-chat-input');
+        const text = input ? input.value.trim() : '';
+        const user = window.currentUserState;
+
+        if (!text || !user) return;
+
+        input.value = '';
+
+        const mod = window.FirebaseModule;
+        if (!mod || !mod.db) return;
+
+        try {
+          const chatDocRef = mod.doc(mod.db, 'chats', user.uid);
+          const messagesCol = mod.collection(mod.db, 'chats', user.uid, 'messages');
+
+          // Add message doc
+          await mod.addDoc(messagesCol, {
+            senderId: user.uid,
+            senderRole: 'user',
+            text: text,
+            createdAt: mod.serverTimestamp ? mod.serverTimestamp() : new Date().toISOString(),
+            read: false
+          });
+
+          // Update parent chat doc
+          await mod.updateDoc(chatDocRef, {
+            lastMessage: text,
+            lastMessageAt: mod.serverTimestamp ? mod.serverTimestamp() : new Date().toISOString(),
+            lastSenderRole: 'user',
+            unreadByAdmin: true
+          });
+
+        } catch (err) {
+          console.error('Error sending message:', err);
+          if (window.showToast) window.showToast('মেসেজ পাঠাতে সমস্যা হয়েছে: ' + err.message, 'error');
+        }
+      });
+    }
+
+    // Real-time listener for user unread status badge on bottom nav & drawer
+    function initUserUnreadListener() {
+      const mod = window.FirebaseModule;
+      if (!mod || !mod.auth || !mod.onAuthStateChanged) {
+        setTimeout(initUserUnreadListener, 100);
+        return;
+      }
+
+      mod.onAuthStateChanged(mod.auth, (user) => {
+        if (!user) {
+          if (activeUserDocUnsubscribe) {
+            activeUserDocUnsubscribe();
+            activeUserDocUnsubscribe = null;
+          }
+          updateUserUnreadBadges(false);
+          return;
+        }
+
+        // Auto-open live chat if redirected from auth gate
+        if (sessionStorage.getItem('pending_live_chat_open') === 'true') {
+          sessionStorage.removeItem('pending_live_chat_open');
+          setTimeout(() => {
+            openUserLiveChat();
+          }, 300);
+        }
+
+        const chatDocRef = mod.doc(mod.db, 'chats', user.uid);
+        activeUserDocUnsubscribe = mod.onSnapshot(chatDocRef, (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            updateUserUnreadBadges(!!data.unreadByUser);
+          } else {
+            updateUserUnreadBadges(false);
+          }
+        }, (err) => {
+          console.error('Error listening to user chat doc unread:', err);
+        });
+      });
+    }
+
+    function updateUserUnreadBadges(hasUnread) {
+      // Bottom nav item badge
+      const bottomNavChat = document.querySelector('.mobile-nav-item[data-nav="live-chat"]');
+      if (bottomNavChat) {
+        let dot = bottomNavChat.querySelector('.live-chat-unread-dot');
+        if (hasUnread) {
+          if (!dot) {
+            dot = document.createElement('span');
+            dot.className = 'live-chat-unread-dot';
+            bottomNavChat.appendChild(dot);
+          }
+          dot.style.display = 'block';
+        } else if (dot) {
+          dot.style.display = 'none';
+        }
+      }
+
+      // Three dots drawer badge
+      const drawerBadge = document.getElementById('live-chat-drawer-badge');
+      if (drawerBadge) {
+        drawerBadge.style.display = hasUnread ? 'block' : 'none';
+      }
+    }
+
+    initUserUnreadListener();
   }
 });

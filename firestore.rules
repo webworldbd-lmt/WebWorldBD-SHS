@@ -80,5 +80,26 @@ service cloud.firestore {
       allow create: if true;
       allow update, delete: if isAdmin();
     }
+
+    // Live Chat Collection & Messages Subcollection
+    // Define ADMIN_UID constant (placeholder)
+    function isChatAdmin() {
+      return isSignedIn() && (
+        request.auth.uid == 'ADMIN_UID' || isAdmin()
+      );
+    }
+
+    match /chats/{userId} {
+      allow read, write: if isSignedIn() && (request.auth.uid == userId || isChatAdmin());
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && (request.auth.uid == userId || isChatAdmin());
+        allow create: if isSignedIn() && (
+          (request.auth.uid == userId && request.resource.data.senderId == request.auth.uid && request.resource.data.senderRole == 'user') ||
+          (isChatAdmin() && request.resource.data.senderRole == 'admin')
+        );
+        allow update, delete: if false;
+      }
+    }
   }
 }
