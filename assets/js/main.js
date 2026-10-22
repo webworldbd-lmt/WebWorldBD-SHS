@@ -752,12 +752,13 @@ document.addEventListener('DOMContentLoaded', () => {
         activeNavKey = 'home';
       } else if (normPath === '/services' || normPath.startsWith('/services/')) {
         activeNavKey = 'services';
-      } else if (normPath === '/projects' || normPath.startsWith('/projects/') || normPath === '/project-details' || normPath.startsWith('/project-details/')) {
-        activeNavKey = 'projects';
       } else if (normPath === '/contact' || normPath === '/connect') {
         activeNavKey = 'connect';
       } else if (normPath === '/start-project' || normPath.startsWith('/start-project/')) {
         activeNavKey = 'fab';
+      } else if (normPath === '/live-chat') {
+        // TODO: Replace with real live chat widget/feature once decided
+        activeNavKey = 'live-chat';
       }
 
       // Remove "active" class from all items first
