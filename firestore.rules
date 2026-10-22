@@ -73,15 +73,27 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    // Project Requests Collection
+    // Project Requests Collection (Legacy & New camelCase)
     match /project_requests/{requestId} {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if true;
       allow update, delete: if isAdmin();
     }
 
-    // Messages / Support Collection
+    match /projectRequests/{requestId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // Messages / Support Requests Collection
     match /messages/{messageId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /supportRequests/{requestId} {
       allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow create: if true;
       allow update, delete: if isAdmin();
