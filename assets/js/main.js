@@ -227,8 +227,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const group2 = [
         { type: 'section-header', i18nKey: 'sectionLivePreview' },
-        { id: 'shopping-now', url: 'https://marketkoro.pages.dev/', icon: 'fas fa-bag-shopping', i18nKey: 'menuShoppingNow', external: true },
-        { id: 'student-tools-ai', url: 'https://studentstoolsorai.pages.dev/', icon: 'fas fa-graduation-cap', i18nKey: 'menuStudentToolsAi', external: true }
+        { id: 'market-koro', url: 'https://marketkoro.pages.dev/', icon: 'fas fa-bag-shopping', i18nKey: 'menuMarketKoro', external: true },
+        { id: 'student-tools-ai', url: 'https://studentstoolsorai.pages.dev/', icon: 'fas fa-graduation-cap', i18nKey: 'menuStudentToolsAi', external: true },
+        { id: 'birthday-website', url: 'https://happybirthday-all.pages.dev/', icon: 'fas fa-cake-candles', i18nKey: 'menuBirthdayWebsite', external: true },
+        { id: 'animated-heart', url: 'https://animatedheart.pages.dev/', icon: 'fas fa-heart', i18nKey: 'menuAnimatedHeart', external: true }
       ];
 
       const group3 = [
