@@ -214,6 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const isLoggedIn = !!user;
 
       const group1 = [
+        { type: 'section-header', i18nKey: 'sectionMainMenu' },
         { id: 'home', url: `${p}index.html`, icon: 'fas fa-house', i18nKey: 'menuHome' },
         { id: 'services', url: `${p}services.html`, icon: 'fas fa-layer-group', i18nKey: 'menuServices' },
         { id: 'start-project', url: `${p}start-project.html`, icon: 'fas fa-rocket', i18nKey: 'menuStartProject' },
@@ -221,13 +222,16 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'connect', url: `${p}contact.html`, icon: 'fas fa-link', i18nKey: 'menuConnect' },
         { id: 'settings', url: `${p}settings.html`, icon: 'fas fa-gear', i18nKey: 'menuSettings' },
         { id: 'theme', action: 'theme', icon: currentTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun', i18nKey: 'menuTheme' },
-        { id: 'language', action: 'language', icon: 'fas fa-globe', i18nKey: 'menuLanguage' },
+        { id: 'language', action: 'language', icon: 'fas fa-globe', i18nKey: 'menuLanguage' }
+      ];
+
+      const group2 = [
         { type: 'section-header', i18nKey: 'sectionLivePreview' },
         { id: 'shopping-now', url: 'https://marketkoro.pages.dev/', icon: 'fas fa-bag-shopping', i18nKey: 'menuShoppingNow', external: true },
         { id: 'student-tools-ai', url: 'https://studentstoolsorai.pages.dev/', icon: 'fas fa-graduation-cap', i18nKey: 'menuStudentToolsAi', external: true }
       ];
 
-      const group2 = [
+      const group3 = [
         { type: 'section-header', i18nKey: 'sectionOthers' },
         isLoggedIn
           ? { id: 'profile', url: `${p}account.html`, icon: 'fas fa-user-gear', i18nKey: 'menuProfile' }
@@ -238,7 +242,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'privacy-policy', url: 'https://webworldbd-privacypolicy.pages.dev/', icon: 'fas fa-shield-halved', i18nKey: 'menuPrivacyPolicy', external: true }
       ];
 
-      const group3 = [
+      const group4 = [
+        { type: 'section-header', i18nKey: 'sectionCreateAccount' },
         isLoggedIn
           ? { id: 'logout', action: 'logout', icon: 'fas fa-right-from-bracket', i18nKey: 'menuLogout' }
           : { id: 'account-auth', url: `${p}account.html`, icon: 'fas fa-right-to-bracket', i18nKey: 'menuLoginRegister' }
@@ -339,6 +344,8 @@ document.addEventListener('DOMContentLoaded', () => {
       html += `<div class="three-dots-group">${renderGroupHtml(group2)}</div>`;
       html += `<div class="three-dots-menu-divider"></div>`;
       html += `<div class="three-dots-group">${renderGroupHtml(group3)}</div>`;
+      html += `<div class="three-dots-menu-divider"></div>`;
+      html += `<div class="three-dots-group">${renderGroupHtml(group4)}</div>`;
 
       drawerBody.innerHTML = html;
       attachMenuClickListeners();
