@@ -222,11 +222,13 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'settings', url: `${p}settings.html`, icon: 'fas fa-gear', i18nKey: 'menuSettings' },
         { id: 'theme', action: 'theme', icon: currentTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun', i18nKey: 'menuTheme' },
         { id: 'language', action: 'language', icon: 'fas fa-globe', i18nKey: 'menuLanguage' },
+        { type: 'section-header', i18nKey: 'sectionLivePreview' },
         { id: 'shopping-now', url: 'https://marketkoro.pages.dev/', icon: 'fas fa-bag-shopping', i18nKey: 'menuShoppingNow', external: true },
         { id: 'student-tools-ai', url: 'https://studentstoolsorai.pages.dev/', icon: 'fas fa-graduation-cap', i18nKey: 'menuStudentToolsAi', external: true }
       ];
 
       const group2 = [
+        { type: 'section-header', i18nKey: 'sectionOthers' },
         isLoggedIn
           ? { id: 'profile', url: `${p}account.html`, icon: 'fas fa-user-gear', i18nKey: 'menuProfile' }
           : { id: 'about', url: `${p}index.html#about`, icon: 'fas fa-user', i18nKey: 'menuAbout' },
@@ -273,6 +275,14 @@ document.addEventListener('DOMContentLoaded', () => {
           const label = translations[currentLang] && translations[currentLang][item.i18nKey]
             ? translations[currentLang][item.i18nKey]
             : '';
+
+          if (item.type === 'section-header') {
+            return `
+              <div class="three-dots-section-header">
+                <span data-i18n="${item.i18nKey}">${label}</span>
+              </div>
+            `;
+          }
 
           if (item.action === 'logout') {
             return `

@@ -1746,14 +1746,16 @@ p {
 .nav-drawer-panel.active .three-dots-group:nth-of-type(1) > *:nth-child(8) { transition-delay: 0.25s; }
 .nav-drawer-panel.active .three-dots-group:nth-of-type(1) > *:nth-child(9) { transition-delay: 0.28s; }
 .nav-drawer-panel.active .three-dots-group:nth-of-type(1) > *:nth-child(10) { transition-delay: 0.31s; }
+.nav-drawer-panel.active .three-dots-group:nth-of-type(1) > *:nth-child(11) { transition-delay: 0.34s; }
 
-.nav-drawer-panel.active .three-dots-group:nth-of-type(2) > *:nth-child(1) { transition-delay: 0.33s; }
-.nav-drawer-panel.active .three-dots-group:nth-of-type(2) > *:nth-child(2) { transition-delay: 0.36s; }
-.nav-drawer-panel.active .three-dots-group:nth-of-type(2) > *:nth-child(3) { transition-delay: 0.39s; }
-.nav-drawer-panel.active .three-dots-group:nth-of-type(2) > *:nth-child(4) { transition-delay: 0.42s; }
-.nav-drawer-panel.active .three-dots-group:nth-of-type(2) > *:nth-child(5) { transition-delay: 0.45s; }
+.nav-drawer-panel.active .three-dots-group:nth-of-type(2) > *:nth-child(1) { transition-delay: 0.36s; }
+.nav-drawer-panel.active .three-dots-group:nth-of-type(2) > *:nth-child(2) { transition-delay: 0.39s; }
+.nav-drawer-panel.active .three-dots-group:nth-of-type(2) > *:nth-child(3) { transition-delay: 0.42s; }
+.nav-drawer-panel.active .three-dots-group:nth-of-type(2) > *:nth-child(4) { transition-delay: 0.45s; }
+.nav-drawer-panel.active .three-dots-group:nth-of-type(2) > *:nth-child(5) { transition-delay: 0.48s; }
+.nav-drawer-panel.active .three-dots-group:nth-of-type(2) > *:nth-child(6) { transition-delay: 0.51s; }
 
-.nav-drawer-panel.active .three-dots-group:nth-of-type(3) > *:nth-child(1) { transition-delay: 0.48s; }
+.nav-drawer-panel.active .three-dots-group:nth-of-type(3) > *:nth-child(1) { transition-delay: 0.54s; }
 
 @media (prefers-reduced-motion: reduce) {
   .nav-drawer-panel .three-dots-group > *,
@@ -1781,6 +1783,19 @@ p {
 
 [data-theme="light"] .three-dots-menu-divider {
   background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.08), transparent);
+}
+
+.three-dots-section-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0.8rem 0.15rem 0.8rem;
+  margin-top: 0.4rem;
+  user-select: none;
+  pointer-events: none;
+  line-height: 1.2;
 }
 
 /* Profile Card at Top */
