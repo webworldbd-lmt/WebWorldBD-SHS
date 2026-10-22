@@ -1126,18 +1126,18 @@ const portfolioData = {
 
   projects: [
     {
-      id: "shs-bazar",
-      title: "SHS Bazar",
+      id: "market-koro",
+      title: "Market Koro",
       category: "ecommerce",
       categoryName_en: "E-Commerce",
       categoryName_bn: "ই-কমার্স",
       featured: true,
-      image: "assets/images/shs-bazar-preview.jpg",
-      url: "https://shsbazar.pages.dev/",
+      image: "assets/images/market-koro-preview.jpg",
+      url: "https://marketkoro.pages.dev/",
       short_desc_en: "Full-featured modern e-commerce web platform with responsive shopping cart, category filtering, product search, and smooth checkout UI.",
       short_desc_bn: "রেসপনসিভ শপিং কার্ট, ক্যাটাগরি ফিল্টার, সার্চ এবং মসৃণ চেকআউট ইন্টারফেস সহ আধুনিক ই-কমার্স প্ল্যাটফর্ম।",
-      full_desc_en: "SHS Bazar is a full-fledged e-commerce platform designed to provide an effortless shopping experience. Built with performance and usability in mind, it features real-time search, dynamic filtering by product type, instant cart updates, modal product views, and a mobile-optimized checkout process.",
-      full_desc_bn: "SHS Bazar একটি চমৎকার অনলাইন কেনাকাটার অভিজ্ঞতা নিশ্চিত করার জন্য নির্মিত ই-কমার্স প্ল্যাটফর্ম। এটি দ্রুতগতি সম্পন্ন এবং এতে রয়েছে রিয়েল-টাইম সার্চ, ফিল্টারিং, ইনস্ট্যান্ট কার্ট আপডেট ও সুন্দর চেকআউট ফ্লো।",
+      full_desc_en: "Market Koro is a full-fledged e-commerce platform designed to provide an effortless shopping experience. Built with performance and usability in mind, it features real-time search, dynamic filtering by product type, instant cart updates, modal product views, and a mobile-optimized checkout process.",
+      full_desc_bn: "Market Koro একটি চমৎকার অনলাইন কেনাকাটার অভিজ্ঞতা নিশ্চিত করার জন্য নির্মিত ই-কমার্স প্ল্যাটফর্ম। এটি দ্রুতগতি সম্পন্ন এবং এতে রয়েছে রিয়েল-টাইম সার্চ, ফিল্টারিং, ইনস্ট্যান্ট কার্ট আপডেট ও সুন্দর চেকআউট ফ্লো।",
       techs: ["HTML5", "CSS3", "JavaScript", "Cloudflare Pages", "Glass UI"],
       key_features_en: [
         "Interactive product catalog with category filter",
