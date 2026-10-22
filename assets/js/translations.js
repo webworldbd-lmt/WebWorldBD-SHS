@@ -352,7 +352,21 @@ const translations = {
     quickLinksTitle: "Quick Links",
     servicesListTitle: "Popular Services",
     contactTitle: "Contact Info",
-    copyrightText: "© 2026 WebWorldBD. Created with passion by SHAFAET HOSSEN SARIP. All rights reserved."
+    copyrightText: "© 2026 WebWorldBD. Created with passion by SHAFAET HOSSEN SARIP. All rights reserved.",
+
+    /* Admin Panel Translation Keys */
+    adminNavGroupMain: "Admin Panel",
+    adminNavGroupQuick: "Quick Links",
+    adminNavDashboard: "Dashboard (Overview)",
+    adminNavMessenger: "Messenger",
+    adminNavUsers: "Users Management",
+    adminNavProjectRequests: "Project Requests",
+    adminNavSupportRequests: "Support Requests",
+    adminNavSettings: "Settings",
+    statTotalUsers: "Total Registered Users",
+    statTodayMessages: "Today's New Messages",
+    statUnreadChats: "Unread Chat Threads",
+    statTotalProjectRequests: "Total Project Requests"
   },
 
   bn: {
@@ -703,6 +717,20 @@ const translations = {
     quickLinksTitle: "কুইক লিঙ্ক",
     servicesListTitle: "জনপ্রিয় সার্ভিসসমূহ",
     contactTitle: "যোগাযোগের ঠিকানা",
-    copyrightText: "© ২০২৬ WebWorldBD। সর্বস্বত্ব সংরক্ষিত সাফায়েত হোসেন ছারিফ দ্বারা।"
+    copyrightText: "© ২০২৬ WebWorldBD। সর্বস্বত্ব সংরক্ষিত সাফায়েত হোসেন ছারিফ দ্বারা।",
+
+    /* Admin Panel Translation Keys */
+    adminNavGroupMain: "অ্যাডমিন প্যানেল",
+    adminNavGroupQuick: "কুইক লিঙ্ক",
+    adminNavDashboard: "ড্যাশবোর্ড (Overview)",
+    adminNavMessenger: "মেসেঞ্জার",
+    adminNavUsers: "ইউজার ম্যানেজমেন্ট",
+    adminNavProjectRequests: "প্রজেক্ট রিকোয়েস্ট",
+    adminNavSupportRequests: "সাপোর্ট রিকোয়েস্ট",
+    adminNavSettings: "সেটিংস",
+    statTotalUsers: "মোট ইউজার",
+    statTodayMessages: "আজকের নতুন মেসেজ",
+    statUnreadChats: "আনরিড চ্যাট",
+    statTotalProjectRequests: "মোট প্রজেক্ট রিকোয়েস্ট"
   }
 };

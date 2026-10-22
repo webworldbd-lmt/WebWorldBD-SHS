@@ -13,8 +13,8 @@
       }
     })();
   </script>
-  <title>Admin Dashboard | WebWorldBD</title>
-  <meta name="description" content="WebWorldBD Admin Control Panel - Manage clients, project requests, active projects, services, earnings, and website settings.">
+  <title>Admin Control Panel | WebWorldBD</title>
+  <meta name="description" content="WebWorldBD Admin Control Panel - System overview, messenger, user management, project requests, support requests, and settings.">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="assets/images/logo.png">
@@ -53,76 +53,59 @@
       </div>
 
       <nav class="dash-nav">
-        <span class="dash-nav-group-title">Main Panel</span>
-        <a href="#dashboard" class="dash-nav-item active" data-nav="dashboard">
+        <span class="dash-nav-group-title" data-i18n="adminNavGroupMain">অ্যাডমিন প্যানেল</span>
+
+        <!-- 1. ড্যাশবোর্ড (Overview) -->
+        <a href="#dashboard" class="dash-nav-item active" data-admin-tab="dashboard">
           <i class="fas fa-chart-line"></i>
-          <span>Dashboard</span>
-        </a>
-        <a href="#project-requests" class="dash-nav-item" data-nav="project-requests">
-          <i class="fas fa-inbox"></i>
-          <span>Project Requests</span>
-          <span class="dash-nav-badge">5</span>
-        </a>
-        <a href="#projects" class="dash-nav-item" data-nav="projects">
-          <i class="fas fa-diagram-project"></i>
-          <span>Projects</span>
-        </a>
-        <a href="#clients" class="dash-nav-item" data-nav="clients">
-          <i class="fas fa-users"></i>
-          <span>Clients</span>
-        </a>
-        <a href="#services" class="dash-nav-item" data-nav="services">
-          <i class="fas fa-layer-group"></i>
-          <span>Services</span>
+          <span data-i18n="adminNavDashboard">ড্যাশবোর্ড</span>
         </a>
 
-        <span class="dash-nav-group-title">Finance & Support</span>
-        <a href="#live-chat" class="dash-nav-item" data-nav="live-chat" style="position: relative;">
-          <i class="fas fa-headset"></i>
-          <span>লাইভ চ্যাট</span>
+        <!-- 2. মেসেঞ্জার (Live Chat) -->
+        <a href="#messenger" class="dash-nav-item" data-admin-tab="messenger" style="position: relative;">
+          <i class="fas fa-comments"></i>
+          <span data-i18n="adminNavMessenger">মেসেঞ্জার</span>
           <span class="dash-nav-badge" id="admin-unread-chat-count" style="display: none; background: #EF4444; color: #fff;">0</span>
         </a>
-        <a href="#payments" class="dash-nav-item" data-nav="payments">
-          <i class="fas fa-wallet"></i>
-          <span>Payments</span>
-        </a>
-        <a href="#messages" class="dash-nav-item" data-nav="messages">
-          <i class="fas fa-comments"></i>
-          <span>Messages</span>
-        </a>
-        <a href="#support-tickets" class="dash-nav-item" data-nav="support-tickets">
-          <i class="fas fa-headset"></i>
-          <span>Support Tickets</span>
-        </a>
-        <a href="#notifications" class="dash-nav-item" data-nav="notifications">
-          <i class="fas fa-bell"></i>
-          <span>Notifications</span>
-        </a>
-        <a href="#files" class="dash-nav-item" data-nav="files">
-          <i class="fas fa-folder-tree"></i>
-          <span>Files</span>
+
+        <!-- 3. ইউজার ম্যানেজমেন্ট (Users) -->
+        <a href="#users" class="dash-nav-item" data-admin-tab="users">
+          <i class="fas fa-users"></i>
+          <span data-i18n="adminNavUsers">ইউজার ম্যানেজমেন্ট</span>
         </a>
 
-        <span class="dash-nav-group-title">Configuration</span>
-        <a href="settings.html" class="dash-nav-item" data-nav="website-settings">
+        <!-- 4. প্রজেক্ট রিকোয়েস্ট (Project Requests) -->
+        <a href="#project-requests" class="dash-nav-item" data-admin-tab="project-requests" style="position: relative;">
+          <i class="fas fa-rocket"></i>
+          <span data-i18n="adminNavProjectRequests">প্রজেক্ট রিকোয়েস্ট</span>
+          <span class="dash-nav-badge" id="admin-nav-project-requests-badge" style="display: none; background: var(--accent-blue); color: #fff;">0</span>
+        </a>
+
+        <!-- 5. সাপোর্ট রিকোয়েস্ট (Support Requests) -->
+        <a href="#support-requests" class="dash-nav-item" data-admin-tab="support-requests" style="position: relative;">
+          <i class="fas fa-headset"></i>
+          <span data-i18n="adminNavSupportRequests">সাপোর্ট রিকোয়েস্ট</span>
+          <span class="dash-nav-badge" id="admin-nav-support-requests-badge" style="display: none; background: var(--accent-orange); color: #fff;">0</span>
+        </a>
+
+        <!-- 6. সেটিংস (Admin Settings) -->
+        <a href="#settings" class="dash-nav-item" data-admin-tab="settings">
           <i class="fas fa-sliders"></i>
-          <span>Website Settings</span>
+          <span data-i18n="adminNavSettings">সেটিংস</span>
         </a>
-        <a href="account.html" class="dash-nav-item" data-nav="admin-profile">
-          <i class="fas fa-user-shield"></i>
-          <span>Admin Profile</span>
-        </a>
+
+        <span class="dash-nav-group-title" data-i18n="adminNavGroupQuick">কুইক লিঙ্ক</span>
         <a href="index.html" class="dash-nav-item">
           <i class="fas fa-house"></i>
-          <span>View Public Site</span>
+          <span data-i18n="menuHome">পাবলিক সাইট দেখুন</span>
         </a>
       </nav>
 
       <div class="dash-sidebar-footer">
         <div class="dash-sidebar-user">
-          <img src="profile.jpg" alt="Admin Avatar" class="dash-sidebar-avatar">
+          <img src="profile.jpg" alt="Admin Avatar" class="dash-sidebar-avatar" id="admin-sidebar-avatar">
           <div class="dash-sidebar-user-info">
-            <span class="dash-sidebar-user-name">SHAFAET HOSSEN SARIP</span>
+            <span class="dash-sidebar-user-name" id="admin-sidebar-name">SHAFAET HOSSEN SARIP</span>
             <span class="dash-sidebar-user-role">Super Admin</span>
           </div>
         </div>
@@ -138,7 +121,7 @@
           <button class="dash-hamburger-btn" id="dash-hamburger-btn" title="Toggle Navigation">
             <i class="fas fa-bars"></i>
           </button>
-          <h1 class="dash-page-title">Admin Control Panel</h1>
+          <h1 class="dash-page-title" id="admin-page-title" data-i18n="adminNavDashboard">ড্যাশবোর্ড (Overview)</h1>
         </div>
 
         <div class="dash-topbar-right">
@@ -147,16 +130,15 @@
             <i class="fas fa-moon"></i>
           </button>
 
-          <!-- Notification Bell -->
-          <button class="toggle-btn" style="position: relative;" title="Admin Alerts">
-            <i class="fas fa-bell"></i>
-            <span style="position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; background: var(--accent-emerald); border-radius: 50%; border: 2px solid var(--bg-card);"></span>
+          <!-- Language Switch Button -->
+          <button class="lang-switch-btn" id="lang-switch-btn" title="Switch Language">
+            <i class="fas fa-globe"></i> BN
           </button>
 
           <!-- Admin Profile Brief -->
-          <a href="account.html" class="dash-topbar-user">
-            <img src="profile.jpg" alt="Admin Photo" class="dash-topbar-avatar">
-            <span class="dash-topbar-name">SHAFAET HOSSEN SARIP</span>
+          <a href="#settings" class="dash-topbar-user" data-admin-tab-trigger="settings">
+            <img src="profile.jpg" alt="Admin Photo" class="dash-topbar-avatar" id="admin-topbar-avatar">
+            <span class="dash-topbar-name" id="admin-topbar-name">SHAFAET HOSSEN SARIP</span>
           </a>
         </div>
       </header>
@@ -164,250 +146,129 @@
       <!-- Main Dashboard Page Content -->
       <main class="dash-content">
 
-        <!-- Welcome Banner Section -->
-        <div class="dash-welcome-card">
-          <div class="dash-welcome-text">
-            <h2>System Overview & Analytics 🚀</h2>
-            <p>Welcome to WebWorldBD Central Admin Panel. Monitor client requests, earnings, and project execution in real-time.</p>
-          </div>
-          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-            <a href="start-project.html" class="btn btn-primary">
-              <i class="fas fa-plus-circle"></i> Add New Project
-            </a>
-            <button type="button" class="btn btn-secondary" onclick="alert('Notification composer opened!');">
-              <i class="fas fa-paper-plane"></i> Send Notification
-            </button>
-          </div>
-        </div>
-
-        <!-- Summary Cards Row -->
-        <div class="dash-stats-row">
-          <div class="dash-stat-card">
-            <div class="dash-stat-info">
-              <h4>Total Clients</h4>
-              <div class="stat-number">86+</div>
+        <!-- ===================================================================
+             1. ড্যাশবোর্ড (Overview Section)
+             =================================================================== -->
+        <section id="admin-section-overview" class="admin-tab-section active">
+          <!-- Welcome Banner Section -->
+          <div class="dash-welcome-card">
+            <div class="dash-welcome-text">
+              <h2>System Overview & Analytics 🚀</h2>
+              <p>Welcome to WebWorldBD Admin Panel. Monitor users, live chat inquiries, project requests, and support tickets in real-time.</p>
             </div>
-            <div class="dash-stat-icon-box icon-blue">
-              <i class="fas fa-users"></i>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+              <a href="#messenger" class="btn btn-primary" data-admin-tab-trigger="messenger">
+                <i class="fas fa-comments"></i> ওপেন মেসেঞ্জার
+              </a>
+              <a href="#project-requests" class="btn btn-secondary" data-admin-tab-trigger="project-requests">
+                <i class="fas fa-rocket"></i> প্রজেক্ট রিকোয়েস্ট
+              </a>
             </div>
           </div>
 
-          <div class="dash-stat-card">
-            <div class="dash-stat-info">
-              <h4>Active Projects</h4>
-              <div class="stat-number">12</div>
+          <!-- Quick Stat Cards Row -->
+          <div class="dash-stats-row">
+            <!-- 1. মোট ইউজার -->
+            <div class="dash-stat-card">
+              <div class="dash-stat-info">
+                <h4 data-i18n="statTotalUsers">মোট ইউজার</h4>
+                <div class="stat-number" id="stat-total-users">0</div>
+              </div>
+              <div class="dash-stat-icon-box icon-blue">
+                <i class="fas fa-users"></i>
+              </div>
             </div>
-            <div class="dash-stat-icon-box icon-emerald">
-              <i class="fas fa-bars-progress"></i>
+
+            <!-- 2. আজকের নতুন মেসেজ -->
+            <div class="dash-stat-card">
+              <div class="dash-stat-info">
+                <h4 data-i18n="statTodayMessages">আজকের নতুন মেসেজ</h4>
+                <div class="stat-number" id="stat-today-messages">0</div>
+              </div>
+              <div class="dash-stat-icon-box icon-emerald">
+                <i class="fas fa-message"></i>
+              </div>
+            </div>
+
+            <!-- 3. আনরিড চ্যাট -->
+            <div class="dash-stat-card">
+              <div class="dash-stat-info">
+                <h4 data-i18n="statUnreadChats">আনরিড চ্যাট</h4>
+                <div class="stat-number" id="stat-unread-chats">0</div>
+              </div>
+              <div class="dash-stat-icon-box icon-orange">
+                <i class="fas fa-comments"></i>
+              </div>
+            </div>
+
+            <!-- 4. মোট প্রজেক্ট রিকোয়েস্ট -->
+            <div class="dash-stat-card">
+              <div class="dash-stat-info">
+                <h4 data-i18n="statTotalProjectRequests">মোট প্রজেক্ট রিকোয়েস্ট</h4>
+                <div class="stat-number" id="stat-total-project-requests">0</div>
+              </div>
+              <div class="dash-stat-icon-box icon-purple">
+                <i class="fas fa-rocket"></i>
+              </div>
             </div>
           </div>
 
-          <div class="dash-stat-card">
-            <div class="dash-stat-info">
-              <h4>Pending Requests</h4>
-              <div class="stat-number">5</div>
-            </div>
-            <div class="dash-stat-icon-box icon-orange">
-              <i class="fas fa-clock"></i>
-            </div>
-          </div>
-
-          <div class="dash-stat-card">
-            <div class="dash-stat-info">
-              <h4>Total Earnings</h4>
-              <div class="stat-number">৳4,85,000</div>
-            </div>
-            <div class="dash-stat-icon-box icon-purple">
-              <i class="fas fa-sack-dollar"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- Quick Action Buttons -->
-        <div class="dash-actions-card">
-          <div class="dash-card-header">
-            <h3 class="dash-card-title"><i class="fas fa-bolt"></i> Admin Quick Actions</h3>
-          </div>
-          <div class="dash-quick-btns">
-            <a href="start-project.html" class="btn btn-primary">
-              <i class="fas fa-plus"></i> Add New Project
-            </a>
-            <button type="button" class="btn btn-secondary" onclick="alert('Notification dispatch system ready!');">
-              <i class="fas fa-bullhorn"></i> Send Broadcast Notification
-            </button>
-            <a href="settings.html" class="btn btn-secondary">
-              <i class="fas fa-sliders"></i> Site Settings
-            </a>
-            <a href="contact.html" class="btn btn-whatsapp">
-              <i class="fab fa-whatsapp"></i> Client WhatsApp Line
-            </a>
-          </div>
-        </div>
-
-        <!-- Admin Dynamic Sections -->
-        <!-- 1. OVERVIEW / REQUESTS SECTION -->
-        <div id="admin-section-overview" class="admin-tab-section active">
-          <div class="dash-table-card">
+          <!-- Recent Activity Section ("সাম্প্রতিক কার্যক্রম") -->
+          <div class="dash-table-card" style="margin-top: 1.5rem;">
             <div class="dash-card-header">
-              <h3 class="dash-card-title"><i class="fas fa-list-check"></i> Recent Project Requests</h3>
-              <span class="badge-pill" id="admin-pending-badge"><i class="fas fa-bell"></i> Pending Requests</span>
+              <h3 class="dash-card-title"><i class="fas fa-clock-rotate-left" style="color: var(--accent-blue);"></i> সাম্প্রতিক কার্যক্রম (Recent Activity)</h3>
+              <span class="badge-pill"><i class="fas fa-bolt"></i> Live Activity Feed</span>
             </div>
 
-            <div class="dash-table-responsive">
-              <table class="dash-table">
-                <thead>
-                  <tr>
-                    <th>Client Name</th>
-                    <th>Service Requested</th>
-                    <th>Requirements</th>
-                    <th>Status</th>
-                    <th>Date Submitted</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="admin-requests-tbody">
-                  <tr>
-                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                      <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 0.5rem; display: block; color: var(--accent-blue);"></i>
-                      Loading project requests...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div id="admin-recent-activity-container" style="padding: 1rem 1.5rem;">
+              <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--accent-blue); margin-bottom: 0.5rem; display: block;"></i>
+                কার্যক্রম লোড হচ্ছে...
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <!-- 2. PROJECTS MANAGEMENT SECTION -->
-        <div id="admin-section-projects" class="admin-tab-section" style="display: none;">
-          <div class="dash-table-card">
-            <div class="dash-card-header" style="flex-wrap: wrap; gap: 1rem;">
-              <h3 class="dash-card-title"><i class="fas fa-diagram-project"></i> Projects Management</h3>
-              <button type="button" class="btn btn-primary" id="btn-admin-add-project">
-                <i class="fas fa-plus"></i> Add New Project
-              </button>
-            </div>
-
-            <div class="dash-table-responsive">
-              <table class="dash-table">
-                <thead>
-                  <tr>
-                    <th>Image</th>
-                    <th>Project Name</th>
-                    <th>Category</th>
-                    <th>Client / User</th>
-                    <th>Status</th>
-                    <th>Progress</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="admin-projects-tbody">
-                  <tr>
-                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                      Loading projects...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. CLIENTS / USERS SECTION -->
-        <div id="admin-section-clients" class="admin-tab-section" style="display: none;">
-          <div class="dash-table-card">
-            <div class="dash-card-header">
-              <h3 class="dash-card-title"><i class="fas fa-users"></i> Registered Users & Clients</h3>
-            </div>
-
-            <div class="dash-table-responsive">
-              <table class="dash-table">
-                <thead>
-                  <tr>
-                    <th>Avatar</th>
-                    <th>Name</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Role</th>
-                  </tr>
-                </thead>
-                <tbody id="admin-users-tbody">
-                  <tr>
-                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                      Loading user accounts...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. SERVICES MANAGEMENT SECTION -->
-        <div id="admin-section-services" class="admin-tab-section" style="display: none;">
-          <div class="dash-table-card">
-            <div class="dash-card-header">
-              <h3 class="dash-card-title"><i class="fas fa-layer-group"></i> Services & Cover Images</h3>
-            </div>
-
-            <div class="dash-table-responsive">
-              <table class="dash-table">
-                <thead>
-                  <tr>
-                    <th>Cover Image</th>
-                    <th>Service Title</th>
-                    <th>Category ID</th>
-                    <th>Price</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="admin-services-tbody">
-                  <tr>
-                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                      Loading services...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- LIVE CHAT SECTION -->
-        <div id="admin-section-live-chat" class="admin-tab-section" style="display: none;">
-          <div class="dash-table-card" style="padding: 0; overflow: hidden;">
-            <div class="dash-card-header" style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-glass); flex-wrap: wrap; gap: 1rem;">
-              <h3 class="dash-card-title"><i class="fas fa-comments" style="color: var(--accent-blue);"></i> লাইভ চ্যাট কন্ট্রোল প্যানেল</h3>
+        <!-- ===================================================================
+             2. মেসেঞ্জার (Live Chat Section)
+             =================================================================== -->
+        <section id="admin-section-messenger" class="admin-tab-section" style="display: none;">
+          <div class="dash-table-card" style="padding: 0; overflow: hidden; border-radius: var(--radius-lg);">
+            <div class="dash-card-header" style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-glass); flex-wrap: wrap; gap: 1rem; background: var(--bg-glass);">
+              <h3 class="dash-card-title"><i class="fas fa-comments" style="color: var(--accent-blue);"></i> লাইভ চ্যাট ইনবক্স</h3>
               <button type="button" class="btn btn-primary" id="btn-admin-new-chat">
                 <i class="fas fa-plus"></i> নতুন মেসেজ
               </button>
             </div>
 
-            <div style="display: grid; grid-template-columns: 320px 1fr; min-height: 520px; background: var(--bg-card);" id="admin-chat-layout">
-              <!-- Left Thread List -->
-              <div style="border-right: 1px solid var(--border-glass); display: flex; flex-direction: column;" id="admin-threads-sidebar">
+            <div class="admin-messenger-grid" id="admin-chat-layout">
+              <!-- Left Thread List Sidebar -->
+              <div class="admin-threads-sidebar" id="admin-threads-sidebar">
                 <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-glass); font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
                   ক্লায়েন্ট চ্যাট লিস্ট
                 </div>
                 <div id="admin-threads-list-container" style="flex: 1; overflow-y: auto;">
                   <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
                     <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--accent-blue); margin-bottom: 0.5rem; display: block;"></i>
-                    চ্যাট তথ্য লোড হচ্ছে...
+                    চ্যাট লিস্ট লোড হচ্ছে...
                   </div>
                 </div>
               </div>
 
-              <!-- Right Chat History & Reply Panel -->
-              <div style="display: flex; flex-direction: column; background: rgba(0,0,0,0.02);" id="admin-chat-main-panel">
+              <!-- Right Conversation Main Panel -->
+              <div class="admin-chat-main-panel" id="admin-chat-main-panel">
                 <div id="admin-chat-active-header" style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-glass); background: var(--bg-glass); display: flex; align-items: center; justify-content: space-between;">
                   <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <div id="admin-chat-active-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+                    <!-- Back Button for Mobile View -->
+                    <button type="button" class="btn btn-secondary" id="btn-admin-messenger-back" style="display: none; padding: 0.4rem 0.75rem; border-radius: 50%;">
+                      <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div id="admin-chat-active-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
                       U
                     </div>
-                    <div>
-                      <div id="admin-chat-active-name" style="font-weight: 700; font-size: 1.05rem; color: var(--text-main);">একটি চ্যাট সিলেক্ট করুন</div>
-                      <div id="admin-chat-active-email" style="font-size: 0.8rem; color: var(--text-muted);">ক্লিক করে মেসেজ স্ট্রিম দেখুন</div>
+                    <div style="min-width: 0;">
+                      <div id="admin-chat-active-name" style="font-weight: 700; font-size: 1.05rem; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">একটি চ্যাট সিলেক্ট করুন</div>
+                      <div id="admin-chat-active-email" style="font-size: 0.8rem; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">ক্লিক করে মেসেজ স্ট্রিম দেখুন</div>
                     </div>
                   </div>
                 </div>
@@ -430,131 +291,122 @@
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <!-- 5. MESSAGES & SUPPORT SECTION -->
-        <div id="admin-section-messages" class="admin-tab-section" style="display: none;">
+        <!-- ===================================================================
+             3. ইউজার ম্যানেজমেন্ট (Users Section)
+             =================================================================== -->
+        <section id="admin-section-users" class="admin-tab-section" style="display: none;">
           <div class="dash-table-card">
-            <div class="dash-card-header">
-              <h3 class="dash-card-title"><i class="fas fa-comments"></i> Support Messages & Inquiries</h3>
+            <div class="dash-card-header" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between;">
+              <h3 class="dash-card-title"><i class="fas fa-users" style="color: var(--accent-blue);"></i> রেজিস্টার্ড ইউজার তালিকা</h3>
+              <div style="position: relative; max-width: 320px; width: 100%;">
+                <input type="text" id="admin-users-search-input" class="form-control" placeholder="নাম বা ইমেইল দিয়ে খুঁজুন..." style="padding-left: 2.4rem; border-radius: var(--radius-md); font-size: 0.88rem;">
+                <i class="fas fa-search" style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+              </div>
             </div>
 
             <div class="dash-table-responsive">
               <table class="dash-table">
                 <thead>
                   <tr>
-                    <th>Sender Name</th>
-                    <th>Contact Info</th>
-                    <th>Subject / Message</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th>Avatar</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Username</th>
+                    <th>Phone</th>
+                    <th>Joined Date</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
-                <tbody id="admin-messages-tbody">
+                <tbody id="admin-users-tbody">
                   <tr>
-                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                      Loading messages...
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                      <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 0.5rem; display: block; color: var(--accent-blue);"></i>
+                      ইউজার ডেটা লোড হচ্ছে...
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
-        </div>
+        </section>
+
+        <!-- ===================================================================
+             4. প্রজেক্ট রিকোয়েস্ট (Project Requests Section)
+             =================================================================== -->
+        <section id="admin-section-project-requests" class="admin-tab-section" style="display: none;">
+          <div class="dash-table-card">
+            <div class="dash-card-header" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between;">
+              <h3 class="dash-card-title"><i class="fas fa-rocket" style="color: var(--accent-blue);"></i> প্রজেক্ট রিকোয়েস্টসমূহ (Project Requests)</h3>
+              <span class="badge-pill" id="admin-project-requests-count-badge"><i class="fas fa-inbox"></i> 0 Requests</span>
+            </div>
+
+            <div id="admin-project-requests-list-container" style="padding: 1.25rem;">
+              <div style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--accent-blue); margin-bottom: 0.5rem; display: block;"></i>
+                প্রজেক্ট রিকোয়েস্ট লোড হচ্ছে...
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             5. সাপোর্ট রিকোয়েস্ট (Support Requests Section)
+             =================================================================== -->
+        <section id="admin-section-support-requests" class="admin-tab-section" style="display: none;">
+          <div class="dash-table-card">
+            <div class="dash-card-header" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between;">
+              <h3 class="dash-card-title"><i class="fas fa-headset" style="color: var(--accent-orange);"></i> সাপোর্ট রিকোয়েস্টসমূহ (Support Requests)</h3>
+              <span class="badge-pill" id="admin-support-requests-count-badge" style="background: rgba(245,158,11,0.15); color: #F59E0B; border-color: rgba(245,158,11,0.3);"><i class="fas fa-life-ring"></i> 0 Tickets</span>
+            </div>
+
+            <div id="admin-support-requests-list-container" style="padding: 1.25rem;">
+              <div style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--accent-orange); margin-bottom: 0.5rem; display: block;"></i>
+                সাপোর্ট টিকিটের তথ্য লোড হচ্ছে...
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             6. সেটিংস (Admin Settings Section)
+             =================================================================== -->
+        <section id="admin-section-settings" class="admin-tab-section" style="display: none;">
+          <div class="glass-card" style="padding: 2.25rem; max-width: 720px; margin: 0 auto;">
+            <div class="dash-card-header" style="margin-bottom: 1.5rem;">
+              <h3 class="dash-card-title"><i class="fas fa-user-shield" style="color: var(--accent-blue);"></i> অ্যাডমিন প্রোফাইল ও সেটিংস</h3>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-glass);">
+              <img src="profile.jpg" alt="Admin Photo" id="admin-settings-avatar" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-blue);">
+              <div>
+                <h3 id="admin-settings-name" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.2rem;">SHAFAET HOSSEN SARIP</h3>
+                <p id="admin-settings-email" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">webworldbd.lmt@gmail.com</p>
+                <span class="badge-pill" style="font-size: 0.75rem;"><i class="fas fa-shield-halved"></i> Super Admin Account</span>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+              <button type="button" class="btn btn-secondary" id="btn-admin-edit-profile" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.25rem;">
+                <span><i class="fas fa-pen-to-square" style="color: var(--accent-blue); margin-right: 0.5rem;"></i> প্রোফাইল এডিট করুন (Name & Photo)</span>
+                <i class="fas fa-chevron-right"></i>
+              </button>
+
+              <a href="settings.html" class="btn btn-secondary" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.25rem; text-decoration: none;">
+                <span><i class="fas fa-sliders" style="color: var(--accent-purple); margin-right: 0.5rem;"></i> সাইটের গ্লোবাল সেটিংস (Theme / Language / Clear Cache)</span>
+                <i class="fas fa-chevron-right"></i>
+              </a>
+
+              <button type="button" class="btn btn-danger-outline" id="btn-admin-logout" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.85rem 1.25rem; margin-top: 1rem;">
+                <i class="fas fa-right-from-bracket"></i> অ্যাডমিন অ্যাকাউন্ট লগআউট করুন
+              </button>
+            </div>
+          </div>
+        </section>
 
       </main>
-    </div>
-  </div>
-
-  <!-- Admin Project Modal -->
-  <div class="settings-modal-overlay" id="admin-project-modal">
-    <div class="settings-modal-card glass-card" style="max-width: 580px; width: 100%;">
-      <div class="dash-card-header" style="margin-bottom: 1.25rem;">
-        <h3 class="dash-card-title" id="admin-project-modal-title"><i class="fas fa-folder-plus"></i> Add New Project</h3>
-        <button type="button" class="alert-close-btn btn-modal-cancel" aria-label="Close modal">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <form id="admin-project-form" class="auth-form" style="background: transparent; border: none; padding: 0; box-shadow: none;" novalidate>
-        <input type="hidden" id="admin-project-doc-id" value="">
-        <input type="hidden" id="admin-project-existing-img" value="">
-
-        <div class="form-group">
-          <label for="admin-project-name">Project Title <span style="color: #EF4444;">*</span></label>
-          <input type="text" id="admin-project-name" class="form-control" placeholder="e.g. E-Commerce Portal Redesign" required>
-        </div>
-
-        <div class="form-group">
-          <label for="admin-project-desc">Description</label>
-          <textarea id="admin-project-desc" class="form-control" rows="2" placeholder="Brief project summary or details..."></textarea>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div class="form-group">
-            <label for="admin-project-category">Category</label>
-            <input type="text" id="admin-project-category" class="form-control" placeholder="e.g. Web Development">
-          </div>
-          <div class="form-group">
-            <label for="admin-project-techs">Technologies</label>
-            <input type="text" id="admin-project-techs" class="form-control" placeholder="e.g. HTML5, CSS3, JS, Firebase">
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div class="form-group">
-            <label for="admin-project-client">Client Name / Email</label>
-            <input type="text" id="admin-project-client" class="form-control" placeholder="e.g. client@company.com">
-          </div>
-          <div class="form-group">
-            <label for="admin-project-url">Project Live URL</label>
-            <input type="url" id="admin-project-url" class="form-control" placeholder="https://example.com">
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div class="form-group">
-            <label for="admin-project-status">Status</label>
-            <select id="admin-project-status" class="form-control" style="background: var(--bg-glass); color: var(--text-main);">
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-              <option value="Pending">Pending</option>
-              <option value="Review">Under Review</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="admin-project-progress">Progress % (0 - 100)</label>
-            <input type="number" id="admin-project-progress" class="form-control" min="0" max="100" value="10">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Project Cover Image</label>
-          <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.25rem; flex-wrap: wrap;">
-            <div id="admin-project-img-preview" style="width: 80px; height: 50px; border-radius: var(--radius-md); background: var(--bg-glass); border: 1px solid var(--border-glass); overflow: hidden; display: flex; align-items: center; justify-content: center;">
-              <span style="font-size: 0.75rem; color: var(--text-muted);">No Img</span>
-            </div>
-            <div>
-              <input type="file" id="admin-project-file-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
-              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <button type="button" class="btn btn-secondary" id="btn-admin-project-file" style="padding: 0.45rem 0.85rem; font-size: 0.82rem;">
-                  <i class="fas fa-image"></i> Select Image
-                </button>
-                <button type="button" class="btn btn-danger-outline" id="btn-admin-project-file-remove" style="padding: 0.45rem 0.75rem; font-size: 0.82rem; display: none;">
-                  <i class="fas fa-trash"></i> Delete Img
-                </button>
-              </div>
-              <span id="admin-project-file-status" style="display: block; font-size: 0.78rem; margin-top: 0.25rem;"></span>
-            </div>
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 0.85rem; justify-content: flex-end; margin-top: 1.25rem;">
-          <button type="button" class="btn btn-secondary btn-modal-cancel" style="padding: 0.65rem 1.25rem;">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="admin-project-save-btn" style="padding: 0.65rem 1.5rem;">Save Project</button>
-        </div>
-      </form>
     </div>
   </div>
 
@@ -581,54 +433,6 @@
       <div style="display: flex; justify-content: flex-end;">
         <button type="button" class="btn btn-secondary btn-modal-cancel" style="padding: 0.6rem 1.25rem;">বন্ধ করুন</button>
       </div>
-    </div>
-  </div>
-
-  <!-- Service Image Upload Modal -->
-  <div class="settings-modal-overlay" id="admin-service-modal">
-    <div class="settings-modal-card glass-card" style="max-width: 500px; width: 100%;">
-      <div class="dash-card-header" style="margin-bottom: 1.25rem;">
-        <h3 class="dash-card-title"><i class="fas fa-image"></i> Manage Service Image</h3>
-        <button type="button" class="alert-close-btn btn-modal-cancel" aria-label="Close modal">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <form id="admin-service-form" class="auth-form" style="background: transparent; border: none; padding: 0; box-shadow: none;" novalidate>
-        <input type="hidden" id="admin-service-id" value="">
-        <input type="hidden" id="admin-service-existing-img" value="">
-
-        <div class="form-group">
-          <label id="admin-service-title-label" style="font-weight: 700; font-size: 1.1rem; color: var(--accent-blue);">Service</label>
-          <p id="admin-service-desc" style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.2rem;"></p>
-        </div>
-
-        <div class="form-group">
-          <label>Service Cover Image (webworldbd/services/)</label>
-          <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap;">
-            <div id="admin-service-img-preview" style="width: 100px; height: 60px; border-radius: var(--radius-md); background: var(--bg-glass); border: 1px solid var(--border-glass); overflow: hidden; display: flex; align-items: center; justify-content: center;">
-              <span style="font-size: 0.75rem; color: var(--text-muted);">No Img</span>
-            </div>
-            <div>
-              <input type="file" id="admin-service-file-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
-              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <button type="button" class="btn btn-secondary" id="btn-admin-service-file" style="padding: 0.45rem 0.85rem; font-size: 0.82rem;">
-                  <i class="fas fa-camera"></i> Upload Cover
-                </button>
-                <button type="button" class="btn btn-danger-outline" id="btn-admin-service-file-remove" style="padding: 0.45rem 0.75rem; font-size: 0.82rem; display: none;">
-                  <i class="fas fa-trash"></i> Delete
-                </button>
-              </div>
-              <span id="admin-service-file-status" style="display: block; font-size: 0.78rem; margin-top: 0.25rem;"></span>
-            </div>
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 0.85rem; justify-content: flex-end; margin-top: 1.25rem;">
-          <button type="button" class="btn btn-secondary btn-modal-cancel" style="padding: 0.65rem 1.25rem;">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="admin-service-save-btn" style="padding: 0.65rem 1.5rem;">Save Changes</button>
-        </div>
-      </form>
     </div>
   </div>
 

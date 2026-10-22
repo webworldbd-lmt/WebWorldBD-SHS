@@ -1,0 +1,11 @@
+127.0.0.1 - - [22/Oct/2026 11:45:27] "GET /admin.html HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 11:45:28] "GET /assets/css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 11:45:28] "GET /assets/js/firebase-config.js HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 11:45:28] "GET /assets/js/storage-service.js HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 11:45:28] "GET /assets/images/logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 11:45:28] "GET /profile.jpg HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 11:45:28] "GET /assets/js/data.js HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 11:45:28] "GET /assets/js/translations.js HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 11:45:28] "GET /assets/js/main.js HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 11:45:29] "GET /account.html HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 11:45:30] "GET /start-project.html HTTP/1.1" 200 -

@@ -4664,3 +4664,45 @@ body.lang-bn .hero-intro-text {
     margin-top: auto;
   }
 }
+
+/* Admin Messenger Layout & Mobile Navigation */
+.admin-messenger-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: 540px;
+  background: var(--bg-card);
+}
+
+.admin-threads-sidebar {
+  border-right: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-chat-main-panel {
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+@media (max-width: 768px) {
+  .admin-messenger-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-messenger-grid.mobile-thread-open .admin-threads-sidebar {
+    display: none !important;
+  }
+
+  .admin-messenger-grid.mobile-thread-open .admin-chat-main-panel {
+    display: flex !important;
+  }
+
+  .admin-messenger-grid:not(.mobile-thread-open) .admin-chat-main-panel {
+    display: none !important;
+  }
+
+  .admin-messenger-grid:not(.mobile-thread-open) .admin-threads-sidebar {
+    display: flex !important;
+  }
+}

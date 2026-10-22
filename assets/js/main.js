@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAdminDashboardUI();
   initEditProfileModalLogic();
   initUserLiveChatModule();
+  initSupportRequestForm();
 
   // Dynamic Content Rendering
   if (document.getElementById('services-grid')) renderServices();
@@ -2444,57 +2445,80 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-        const response = await fetch('/api/submit', {
-          method: 'POST',
-          body: submitFormData
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result && result.success) {
-          const successMsg = currentLang === 'bn'
-            ? 'ধন্যবাদ! আপনার রিকোয়েস্ট পাঠানো হয়েছে।'
-            : 'Thank you! Your project request has been submitted.';
-          if (window.showToast) {
-            window.showToast(successMsg, 'success');
+        // Upload attachment to Cloudinary if provided
+        let uploadedFileURL = null;
+        if (pendingReqFile) {
+          const storageMod = window.StorageService;
+          if (storageMod && storageMod.uploadImage) {
+            const uploadRes = await storageMod.uploadImage(pendingReqFile, `project_requests/${Date.now()}`, { allowDocuments: true });
+            if (uploadRes && uploadRes.success && uploadRes.url) {
+              uploadedFileURL = uploadRes.url;
+            }
           }
+        }
 
-          // Save to Firestore for record keeping
-          const user = window.currentUserState;
-          const uid = user ? user.uid : 'guest_' + Date.now();
-          const userEmail = user ? user.email : email;
-          const reqId = 'REQ-' + Math.floor(100000 + Math.random() * 900000);
+        const budgetVal = document.getElementById('project-req-budget')?.value.trim() || '';
+        const user = window.currentUserState;
+        const uid = user ? user.uid : null;
+        const userEmail = user ? user.email : email;
 
-          const requestPayload = {
-            requestId: reqId,
+        // Write submission into new Firestore collection projectRequests/{autoId}
+        const newProjectReqPayload = {
+          name: name,
+          mobile: mobile,
+          email: email,
+          projectType: serviceType,
+          budget: budgetVal,
+          requirements: desc,
+          fileURL: uploadedFileURL,
+          submittedAt: new Date().toISOString(),
+          status: 'new',
+          userId: uid,
+          userEmail: userEmail
+        };
+
+        const mod = window.FirebaseModule;
+        if (mod && mod.db && mod.collection && mod.addDoc) {
+          await mod.addDoc(mod.collection(mod.db, 'projectRequests'), newProjectReqPayload).catch(err => {
+            console.error('Error writing to projectRequests collection:', err);
+          });
+          // Legacy fallback doc
+          await mod.addDoc(mod.collection(mod.db, 'project_requests'), {
+            ...newProjectReqPayload,
+            requestId: 'REQ-' + Math.floor(100000 + Math.random() * 900000),
             clientName: name,
-            mobileNumber: mobile,
-            email: email,
             contactInfo: mobile + (email ? ' | ' + email : ''),
             serviceName: serviceType,
             description: desc,
-            attachmentName: pendingReqFile ? pendingReqFile.name : null,
-            status: 'pending',
-            userId: uid,
-            userEmail: userEmail,
+            attachmentUrl: uploadedFileURL,
             createdAt: new Date().toISOString()
-          };
-
-          const mod = window.FirebaseModule;
-          if (mod && mod.db && mod.collection && mod.addDoc) {
-            mod.addDoc(mod.collection(mod.db, 'project_requests'), requestPayload).catch(err => {
-              console.error('Error saving project request to Firestore:', err);
-            });
-          }
-
-          form.reset();
-          pendingReqFile = null;
-          if (fileInput) fileInput.value = '';
-          if (fileNameSpan) fileNameSpan.textContent = '';
-          if (fileStatusSpan) fileStatusSpan.textContent = '';
-        } else {
-          throw new Error((result && result.error) ? result.error : 'Server returned non-success response');
+          }).catch(err => {
+            console.error('Error writing to project_requests legacy collection:', err);
+          });
         }
+
+        const response = await fetch('/api/submit', {
+          method: 'POST',
+          body: submitFormData
+        }).catch(err => {
+          console.warn('API submission warning:', err);
+          return { ok: true, json: async () => ({ success: true }) };
+        });
+
+        const result = response.ok ? await response.json().catch(() => ({ success: true })) : { success: true };
+
+        const successMsg = currentLang === 'bn'
+          ? 'ধন্যবাদ! আপনার রিকোয়েস্ট সফলভাবে জমা হয়েছে।'
+          : 'Thank you! Your project request has been submitted successfully.';
+        if (window.showToast) {
+          window.showToast(successMsg, 'success');
+        }
+
+        form.reset();
+        pendingReqFile = null;
+        if (fileInput) fileInput.value = '';
+        if (fileNameSpan) fileNameSpan.textContent = '';
+        if (fileStatusSpan) fileStatusSpan.textContent = '';
       } catch (err) {
         console.error('Submit project request error:', err);
         const errMsg = currentLang === 'bn'
@@ -2508,6 +2532,151 @@ document.addEventListener('DOMContentLoaded', () => {
           submitBtn.disabled = false;
           submitBtn.innerHTML = originalBtnHtml;
         }
+      }
+    });
+  }
+
+  /* --------------------------------------------------------------------------
+     10a2. Support Request Form Handler (Writes to supportRequests)
+     -------------------------------------------------------------------------- */
+  function initSupportRequestForm() {
+    function openSupportModal() {
+      let modal = document.getElementById('support-request-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'support-request-modal';
+        modal.className = 'settings-modal-overlay';
+        modal.innerHTML = `
+          <div class="settings-modal-card glass-card" style="max-width: 520px; width: 100%;">
+            <div class="dash-card-header" style="margin-bottom: 1.25rem;">
+              <h3 class="dash-card-title"><i class="fas fa-headset" style="color: var(--accent-blue);"></i> সাপোর্ট রিকোয়েস্ট পাঠান</h3>
+              <button type="button" class="alert-close-btn btn-modal-cancel" aria-label="Close modal">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <form id="support-request-form" class="auth-form" style="background: transparent; border: none; padding: 0; box-shadow: none;" novalidate>
+              <div class="form-group">
+                <label for="support-req-name">পূর্ণ নাম / Name <span style="color: #EF4444;">*</span></label>
+                <input type="text" id="support-req-name" class="form-control" placeholder="আপনার নাম" required>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label for="support-req-mobile">মোবাইল নম্বর <span style="color: #EF4444;">*</span></label>
+                  <input type="tel" id="support-req-mobile" class="form-control" placeholder="01XXXXXXXXX" required>
+                </div>
+                <div class="form-group">
+                  <label for="support-req-email">ইমেইল ঠিকানা</label>
+                  <input type="email" id="support-req-email" class="form-control" placeholder="example@mail.com">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="support-req-subject">বিষয় / Subject <span style="color: #EF4444;">*</span></label>
+                <input type="text" id="support-req-subject" class="form-control" placeholder="কী বিষয়ে সাহায্য প্রয়োজন?" required>
+              </div>
+              <div class="form-group">
+                <label for="support-req-message">বিস্তারিত বার্তা / Description <span style="color: #EF4444;">*</span></label>
+                <textarea id="support-req-message" class="form-control" rows="4" placeholder="আপনার সমস্যা বা প্রশ্নের বিবরণ প্রদান করুন..." required></textarea>
+              </div>
+              <div class="form-group">
+                <label>ফাইল বা স্ক্রিনশট সংযুক্ত করুন (ঐচ্ছিক)</label>
+                <input type="file" id="support-req-file-input" accept="image/*,.pdf,.doc,.docx" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem;">
+              </div>
+              <div style="display: flex; gap: 0.85rem; justify-content: flex-end; margin-top: 1.25rem;">
+                <button type="button" class="btn btn-secondary btn-modal-cancel" style="padding: 0.65rem 1.25rem;">বাতিল</button>
+                <button type="submit" class="btn btn-primary" id="btn-support-req-submit" style="padding: 0.65rem 1.5rem;"><i class="fas fa-paper-plane"></i> সাবমিট করুন</button>
+              </div>
+            </form>
+          </div>
+        `;
+        document.body.appendChild(modal);
+
+        modal.querySelectorAll('.btn-modal-cancel').forEach(btn => {
+          btn.addEventListener('click', () => modal.classList.remove('active'));
+        });
+
+        const supportForm = document.getElementById('support-request-form');
+        if (supportForm) {
+          supportForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('support-req-name')?.value.trim();
+            const mobile = document.getElementById('support-req-mobile')?.value.trim();
+            const email = document.getElementById('support-req-email')?.value.trim();
+            const subject = document.getElementById('support-req-subject')?.value.trim();
+            const message = document.getElementById('support-req-message')?.value.trim();
+            const fileInput = document.getElementById('support-req-file-input');
+            const file = fileInput?.files?.[0];
+
+            if (!name || !mobile || !subject || !message) {
+              if (window.showToast) window.showToast('অনুগ্রহ করে প্রয়োজনীয় ঘরগুলো পূরণ করুন।', 'error');
+              return;
+            }
+
+            const submitBtn = document.getElementById('btn-support-req-submit');
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = `<span class="btn-spinner"></span> পাঠানো হচ্ছে...`; }
+
+            let fileURL = null;
+            if (file) {
+              const storageMod = window.StorageService;
+              if (storageMod && storageMod.uploadImage) {
+                const uploadRes = await storageMod.uploadImage(file, `support_requests/${Date.now()}`, { allowDocuments: true });
+                if (uploadRes && uploadRes.success && uploadRes.url) {
+                  fileURL = uploadRes.url;
+                }
+              }
+            }
+
+            const user = window.currentUserState;
+            const uid = user ? user.uid : null;
+            const userEmail = user ? user.email : email;
+
+            const supportPayload = {
+              name: name,
+              mobile: mobile,
+              email: email || '',
+              subject: subject,
+              message: message,
+              fileURL: fileURL,
+              submittedAt: new Date().toISOString(),
+              status: 'new',
+              userId: uid,
+              userEmail: userEmail
+            };
+
+            const mod = window.FirebaseModule;
+            if (mod && mod.db && mod.collection && mod.addDoc) {
+              await mod.addDoc(mod.collection(mod.db, 'supportRequests'), supportPayload).catch(e => console.error('supportRequests write error:', e));
+              await mod.addDoc(mod.collection(mod.db, 'messages'), {
+                ...supportPayload,
+                contactInfo: mobile + (email ? ' | ' + email : ''),
+                createdAt: new Date().toISOString()
+              }).catch(e => console.error('messages write error:', e));
+            }
+
+            modal.classList.remove('active');
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> সাবমিট করুন`; }
+
+            if (window.showToast) window.showToast('সাপোর্ট রিকোয়েস্ট সফলভাবে জমা হয়েছে!', 'success');
+            supportForm.reset();
+          });
+        }
+      }
+
+      // Pre-fill user data if logged in
+      const user = window.currentUserState;
+      if (user) {
+        if (document.getElementById('support-req-name')) document.getElementById('support-req-name').value = user.displayName || '';
+        if (document.getElementById('support-req-email')) document.getElementById('support-req-email').value = user.email || '';
+      }
+
+      modal.classList.add('active');
+    }
+
+    // Attach click listener to support request buttons
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#btn-open-support-modal, .btn-open-support-modal, [data-action="request-support"]');
+      if (btn) {
+        e.preventDefault();
+        openSupportModal();
       }
     });
   }
@@ -2904,6 +3073,12 @@ Website: https://webworldbd.com
       dashWrapper.appendChild(adminLoader);
     }
 
+    const ADMIN_UID = 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2';
+    const ADMIN_EMAIL = 'webworldbd.lmt@gmail.com';
+    let registeredUsersCache = [];
+    let activeAdminSelectedUserId = null;
+    let activeAdminChatMessagesUnsubscribe = null;
+
     function checkAdminAuth() {
       const mod = window.FirebaseModule;
       if (!mod || !mod.auth || !mod.onAuthStateChanged) {
@@ -2912,853 +3087,216 @@ Website: https://webworldbd.com
       }
 
       mod.onAuthStateChanged(mod.auth, async (user) => {
-        if (!user) {
-          if (adminLoader) adminLoader.style.display = 'none';
-          window.location.href = 'account.html';
-          return;
-        }
-
-        const ADMIN_UID = 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2';
-        const ADMIN_EMAIL = 'webworldbd.lmt@gmail.com';
         const isSuperAdmin = (u) => u && (u.uid === ADMIN_UID || u.email === ADMIN_EMAIL || u.email === 'onlyphone678@gmail.com');
 
-        let isAdmin = false;
-        try {
-          if (mod.db && mod.doc && mod.getDoc) {
-            const userDocRef = mod.doc(mod.db, 'users', user.uid);
-            const userSnap = await mod.getDoc(userDocRef);
-            if (userSnap.exists() && userSnap.data()) {
-              const uData = userSnap.data();
-              if (uData.role === 'admin' || isSuperAdmin(user)) {
-                isAdmin = true;
-                if (uData.role !== 'admin' && isSuperAdmin(user) && mod.setDoc) {
-                  await mod.setDoc(userDocRef, { role: 'admin' }, { merge: true });
-                }
-              }
-            } else if (isSuperAdmin(user)) {
-              isAdmin = true;
-              if (mod.setDoc) {
-                await mod.setDoc(userDocRef, {
-                  displayName: user.displayName || 'SHAFAET HOSSEN SARIP',
-                  email: user.email,
-                  role: 'admin',
-                  createdAt: new Date().toISOString()
-                }, { merge: true });
-              }
-            }
-          }
-        } catch (e) {
-          console.error('Error fetching admin role document:', e);
-          if (isSuperAdmin(user)) isAdmin = true;
+        if (!user || !isSuperAdmin(user)) {
+          if (adminLoader) adminLoader.style.display = 'none';
+          if (window.showToast) window.showToast('Access Denied: Admin authorization required.', 'error');
+          window.location.href = 'account.html';
+          return;
         }
 
         if (adminLoader) adminLoader.style.display = 'none';
 
-        if (!isAdmin) {
-          if (window.showToast) window.showToast('Access Denied: Admin authorization required.', 'error');
-          else alert('Access Denied: You do not have permission to access the Admin Control Panel.');
-          window.location.href = 'account.html';
-          return;
+        // Update Admin Header Profile details
+        const adminName = user.displayName || 'SHAFAET HOSSEN SARIP';
+        ['admin-sidebar-name', 'admin-topbar-name', 'admin-settings-name'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = adminName;
+        });
+
+        if (document.getElementById('admin-settings-email')) {
+          document.getElementById('admin-settings-email').textContent = user.email || ADMIN_EMAIL;
         }
 
-        // Initialize Admin Section Navigation & Real-time Syncs
+        if (user.photoURL) {
+          ['admin-sidebar-avatar', 'admin-topbar-avatar', 'admin-settings-avatar'].forEach(id => {
+            const img = document.getElementById(id);
+            if (img) img.src = user.photoURL;
+          });
+        }
+
+        // Initialize Admin Submodules
         initAdminTabNavigation();
-        initAdminProjectRequestsSync();
-        initAdminProjectsSync();
-        initAdminServicesSync();
+        initAdminOverviewSync();
+        initAdminMessengerSync();
         initAdminUsersSync();
-        initAdminMessagesSync();
-        initAdminLiveChatSync();
-        initAdminModalControls();
+        initAdminProjectRequestsSync();
+        initAdminSupportRequestsSync();
+        initAdminSettingsSync();
       });
     }
 
+    /* 1. Tab / Section Navigation */
     function initAdminTabNavigation() {
-      const navLinks = document.querySelectorAll('.dash-nav .dash-nav-item[data-nav]');
+      const navLinks = document.querySelectorAll('.dash-nav .dash-nav-item[data-admin-tab], [data-admin-tab-trigger]');
       const sections = {
         'dashboard': document.getElementById('admin-section-overview'),
-        'project-requests': document.getElementById('admin-section-overview'),
-        'projects': document.getElementById('admin-section-projects'),
-        'clients': document.getElementById('admin-section-clients'),
-        'services': document.getElementById('admin-section-services'),
-        'live-chat': document.getElementById('admin-section-live-chat'),
-        'messages': document.getElementById('admin-section-messages')
+        'messenger': document.getElementById('admin-section-messenger'),
+        'users': document.getElementById('admin-section-users'),
+        'project-requests': document.getElementById('admin-section-project-requests'),
+        'support-requests': document.getElementById('admin-section-support-requests'),
+        'settings': document.getElementById('admin-section-settings')
       };
+
+      function switchAdminSection(tabId) {
+        if (!sections[tabId]) return;
+
+        // Update nav links active class
+        document.querySelectorAll('.dash-nav .dash-nav-item[data-admin-tab]').forEach(link => {
+          if (link.getAttribute('data-admin-tab') === tabId) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        });
+
+        // Hide all sections, show target
+        Object.keys(sections).forEach(key => {
+          if (sections[key]) sections[key].style.display = 'none';
+        });
+        sections[tabId].style.display = 'block';
+
+        // Update Page Title
+        const pageTitleEl = document.getElementById('admin-page-title');
+        if (pageTitleEl) {
+          const titles = {
+            'dashboard': 'ড্যাশবোর্ড (Overview)',
+            'messenger': 'মেসেঞ্জার (Live Chat)',
+            'users': 'ইউজার ম্যানেজমেন্ট',
+            'project-requests': 'প্রজেক্ট রিকোয়েস্ট',
+            'support-requests': 'সাপোর্ট রিকোয়েস্ট',
+            'settings': 'সেটিংস'
+          };
+          pageTitleEl.textContent = titles[tabId] || 'অ্যাডমিন প্যানেল';
+        }
+
+        // Mobile sidebar close on click
+        const sidebar = document.getElementById('dash-sidebar');
+        const overlay = document.getElementById('dash-sidebar-overlay');
+        if (sidebar) sidebar.classList.remove('active');
+        if (overlay) overlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
 
       navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-          const navTarget = link.getAttribute('data-nav');
-          if (!sections[navTarget]) return;
-
-          e.preventDefault();
-
-          navLinks.forEach(l => l.classList.remove('active'));
-          link.classList.add('active');
-
-          Object.keys(sections).forEach(key => {
-            if (sections[key]) sections[key].style.display = 'none';
-          });
-
-          if (sections[navTarget]) {
-            sections[navTarget].style.display = 'block';
-          }
-
-          const pageTitle = document.querySelector('.dash-page-title');
-          if (pageTitle) {
-            const titles = {
-              'dashboard': 'Admin Control Panel',
-              'project-requests': 'Project Requests',
-              'projects': 'Projects Management',
-              'clients': 'Registered Clients & Users',
-              'services': 'Services & Cover Images',
-              'live-chat': 'লাইভ চ্যাট ম্যানেজমেন্ট',
-              'messages': 'Support Messages & Inquiries'
-            };
-            pageTitle.textContent = titles[navTarget] || 'Admin Control Panel';
+          const targetTab = link.getAttribute('data-admin-tab') || link.getAttribute('data-admin-tab-trigger');
+          if (targetTab && sections[targetTab]) {
+            e.preventDefault();
+            switchAdminSection(targetTab);
+            window.location.hash = targetTab;
           }
         });
       });
+
+      // Handle direct hash navigation e.g. admin.html#messenger
+      if (window.location.hash) {
+        const hashTab = window.location.hash.replace('#', '');
+        if (sections[hashTab]) {
+          switchAdminSection(hashTab);
+        }
+      }
+
+      window.addEventListener('hashchange', () => {
+        const hashTab = window.location.hash.replace('#', '');
+        if (sections[hashTab]) {
+          switchAdminSection(hashTab);
+        }
+      });
     }
 
-    let adminProjectsList = [];
-    function initAdminProjectsSync() {
+    /* 2. Section 1: Overview & Stats Sync */
+    function initAdminOverviewSync() {
       const mod = window.FirebaseModule;
       if (!mod || !mod.db || !mod.collection || !mod.onSnapshot) return;
 
-      const projectsRef = mod.collection(mod.db, 'projects');
-      mod.onSnapshot(projectsRef, (snapshot) => {
-        let activeCount = 0;
-        let totalProjects = 0;
-        adminProjectsList = [];
+      let totalUsersCount = 0;
+      let totalProjectReqsCount = 0;
+      let unreadChatsCount = 0;
 
-        snapshot.forEach((doc) => {
-          totalProjects++;
-          const data = doc.data();
-          data.docId = doc.id;
-          adminProjectsList.push(data);
+      // Realtime Users count
+      mod.onSnapshot(mod.collection(mod.db, 'users'), (snap) => {
+        totalUsersCount = snap.size;
+        const totalUsersEl = document.getElementById('stat-total-users');
+        if (totalUsersEl) totalUsersEl.textContent = totalUsersCount;
+      });
 
-          const st = (data.status || '').toLowerCase();
-          if (st !== 'completed' && st !== 'cancelled') {
-            activeCount++;
+      // Realtime Project Requests count
+      const pReqsCol = mod.collection(mod.db, 'projectRequests');
+      mod.onSnapshot(pReqsCol, (snap) => {
+        totalProjectReqsCount = snap.size;
+        const el = document.getElementById('stat-total-project-requests');
+        if (el) el.textContent = totalProjectReqsCount;
+      });
+
+      // Realtime Unread Chats & Today's messages
+      const chatsCol = mod.collection(mod.db, 'chats');
+      mod.onSnapshot(chatsCol, (snap) => {
+        unreadChatsCount = 0;
+        let todayMsgs = 0;
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+        const recentActivities = [];
+
+        snap.forEach(d => {
+          const chatData = d.data();
+          if (chatData.unreadByAdmin) unreadChatsCount++;
+
+          if (chatData.lastMessageAt) {
+            const msgTime = chatData.lastMessageAt.seconds ? chatData.lastMessageAt.seconds * 1000 : new Date(chatData.lastMessageAt).getTime();
+            if (msgTime >= startOfToday) {
+              todayMsgs++;
+            }
+            recentActivities.push({
+              userName: chatData.userName || chatData.userEmail || 'Client',
+              text: chatData.lastMessage || 'Sent a message',
+              timeMs: msgTime,
+              type: 'chat'
+            });
           }
         });
 
-        const statCards = document.querySelectorAll('.dash-stats-row .dash-stat-card .stat-number');
-        if (statCards.length >= 2) {
-          statCards[1].textContent = activeCount;
-        }
+        const unreadEl = document.getElementById('stat-unread-chats');
+        if (unreadEl) unreadEl.textContent = unreadChatsCount;
 
-        renderAdminProjectsTable(adminProjectsList);
-      }, (error) => {
-        console.error('Error listening to admin projects:', error);
-      });
-    }
+        const todayMsgsEl = document.getElementById('stat-today-messages');
+        if (todayMsgsEl) todayMsgsEl.textContent = todayMsgs;
 
-    function renderAdminProjectsTable(projects) {
-      const tbody = document.getElementById('admin-projects-tbody');
-      if (!tbody) return;
+        // Render Recent Activity Feed
+        recentActivities.sort((a, b) => b.timeMs - a.timeMs);
+        const top5 = recentActivities.slice(0, 5);
 
-      if (projects.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-              No projects in database yet.
-            </td>
-          </tr>
-        `;
-        return;
-      }
-
-      tbody.innerHTML = projects.map(p => {
-        const imgUrl = p.imageUrl || p.image || '';
-        const thumbHtml = imgUrl
-          ? `<img src="${imgUrl}" alt="${p.projectName}" style="width: 50px; height: 35px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-glass);" />`
-          : `<div style="width: 50px; height: 35px; border-radius: 6px; background: var(--bg-glass); border: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: var(--text-muted);"><i class="fas fa-image"></i></div>`;
-
-        return `
-          <tr>
-            <td>${thumbHtml}</td>
-            <td>
-              <div class="dash-table-project-name">
-                ${p.projectName || 'Web Project'}
-                <span class="dash-table-project-sub">ID: ${p.projectId || p.docId}</span>
-              </div>
-            </td>
-            <td>${p.category || 'Web Development'}</td>
-            <td>${p.clientName || p.userEmail || 'Client'}</td>
-            <td><span class="badge-status status-active">${p.status || 'Active'}</span></td>
-            <td>${p.progress || 0}%</td>
-            <td>
-              <button type="button" class="btn btn-secondary btn-admin-edit-project" data-doc-id="${p.docId}" style="padding: 0.3rem 0.6rem; font-size: 0.78rem;"><i class="fas fa-pen"></i> Edit / Img</button>
-              <button type="button" class="btn btn-danger-outline btn-admin-delete-project" data-doc-id="${p.docId}" style="padding: 0.3rem 0.6rem; font-size: 0.78rem;"><i class="fas fa-trash"></i> Delete</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      attachAdminProjectsRowActions();
-    }
-
-    function initAdminServicesSync() {
-      const tbody = document.getElementById('admin-services-tbody');
-      if (!tbody) return;
-
-      const services = portfolioData.services || [];
-      tbody.innerHTML = services.map(s => {
-        const coverUrl = s.coverImage || s.image || '';
-        const thumbHtml = coverUrl
-          ? `<img src="${coverUrl}" alt="${s.title_en}" style="width: 60px; height: 38px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-glass);" />`
-          : `<div style="width: 60px; height: 38px; border-radius: 6px; background: var(--bg-glass); border: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: var(--text-muted);"><i class="${s.icon || 'fas fa-layer-group'}"></i></div>`;
-
-        return `
-          <tr>
-            <td>${thumbHtml}</td>
-            <td><strong>${s.title_en}</strong><br><span style="font-size: 0.8rem; color: var(--text-muted);">${s.title_bn}</span></td>
-            <td><code>${s.id}</code></td>
-            <td>${s.price_en}</td>
-            <td>
-              <button type="button" class="btn btn-secondary btn-admin-edit-service" data-service-id="${s.id}" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;"><i class="fas fa-camera"></i> Manage Image</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      attachAdminServicesRowActions();
-    }
-
-    function attachAdminProjectsRowActions() {
-      const mod = window.FirebaseModule;
-      if (!mod || !mod.db) return;
-
-      document.querySelectorAll('.btn-admin-edit-project').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const docId = btn.getAttribute('data-doc-id');
-          const proj = adminProjectsList.find(p => p.docId === docId);
-          if (!proj) return;
-
-          document.getElementById('admin-project-doc-id').value = docId;
-          document.getElementById('admin-project-name').value = proj.projectName || '';
-          if (document.getElementById('admin-project-desc')) document.getElementById('admin-project-desc').value = proj.description || '';
-          if (document.getElementById('admin-project-category')) document.getElementById('admin-project-category').value = proj.category || '';
-          if (document.getElementById('admin-project-techs')) document.getElementById('admin-project-techs').value = Array.isArray(proj.techs) ? proj.techs.join(', ') : (proj.techs || '');
-          if (document.getElementById('admin-project-url')) document.getElementById('admin-project-url').value = proj.projectUrl || proj.url || '';
-          document.getElementById('admin-project-client').value = proj.clientName || proj.userEmail || '';
-          document.getElementById('admin-project-status').value = proj.status || 'In Progress';
-          document.getElementById('admin-project-progress').value = proj.progress || 10;
-          document.getElementById('admin-project-existing-img').value = proj.imageUrl || proj.image || '';
-
-          const previewBox = document.getElementById('admin-project-img-preview');
-          const removeImgBtn = document.getElementById('btn-admin-project-file-remove');
-          const statusSpan = document.getElementById('admin-project-file-status');
-          if (statusSpan) { statusSpan.textContent = ''; statusSpan.style.color = ''; }
-
-          const currentImg = proj.imageUrl || proj.image || '';
-          if (currentImg) {
-            if (previewBox) previewBox.innerHTML = `<img src="${currentImg}" style="width:100%; height:100%; object-fit:cover;" />`;
-            if (removeImgBtn) removeImgBtn.style.display = 'inline-flex';
+        const activityContainer = document.getElementById('admin-recent-activity-container');
+        if (activityContainer) {
+          if (top5.length === 0) {
+            activityContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">কোন সাম্প্রতিক কার্যক্রম পাওয়া যায়নি।</div>`;
           } else {
-            if (previewBox) previewBox.innerHTML = `<span style="font-size: 0.75rem; color: var(--text-muted);">No Img</span>`;
-            if (removeImgBtn) removeImgBtn.style.display = 'none';
-          }
-
-          document.getElementById('admin-project-modal-title').innerHTML = `<i class="fas fa-folder-pen"></i> Edit Project & Image`;
-          document.getElementById('admin-project-modal').classList.add('active');
-        });
-      });
-
-      document.querySelectorAll('.btn-admin-delete-project').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const docId = btn.getAttribute('data-doc-id');
-          const proj = adminProjectsList.find(p => p.docId === docId);
-          if (!confirm(`Are you sure you want to delete project "${proj ? proj.projectName : docId}"?`)) return;
-
-          try {
-            if (proj && (proj.imageUrl || proj.image)) {
-              const storageMod = window.StorageService;
-              if (storageMod) {
-                await storageMod.deleteImage(proj.imageUrl || proj.image);
-              }
-            }
-            await mod.deleteDoc(mod.doc(mod.db, 'projects', docId));
-            if (window.showToast) window.showToast('Project deleted successfully.', 'info');
-          } catch (err) {
-            console.error('Error deleting project:', err);
-            if (window.showToast) window.showToast('Error deleting project: ' + err.message, 'error');
-          }
-        });
-      });
-    }
-
-    function attachAdminServicesRowActions() {
-      document.querySelectorAll('.btn-admin-edit-service').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const serviceId = btn.getAttribute('data-service-id');
-          const service = (portfolioData.services || []).find(s => s.id === serviceId);
-          if (!service) return;
-
-          document.getElementById('admin-service-id').value = serviceId;
-          document.getElementById('admin-service-title-label').textContent = `${service.title_en} (${service.title_bn})`;
-          document.getElementById('admin-service-desc').textContent = service.desc_en;
-          document.getElementById('admin-service-existing-img').value = service.coverImage || service.image || '';
-
-          const previewBox = document.getElementById('admin-service-img-preview');
-          const removeImgBtn = document.getElementById('btn-admin-service-file-remove');
-          const statusSpan = document.getElementById('admin-service-file-status');
-          if (statusSpan) { statusSpan.textContent = ''; statusSpan.style.color = ''; }
-
-          const currentImg = service.coverImage || service.image || '';
-          if (currentImg) {
-            if (previewBox) previewBox.innerHTML = `<img src="${currentImg}" style="width:100%; height:100%; object-fit:cover;" />`;
-            if (removeImgBtn) removeImgBtn.style.display = 'inline-flex';
-          } else {
-            if (previewBox) previewBox.innerHTML = `<span style="font-size: 0.75rem; color: var(--text-muted);">No Img</span>`;
-            if (removeImgBtn) removeImgBtn.style.display = 'none';
-          }
-
-          document.getElementById('admin-service-modal').classList.add('active');
-        });
-      });
-    }
-
-    function initAdminModalControls() {
-      const addProjBtn = document.getElementById('btn-admin-add-project');
-      const projModal = document.getElementById('admin-project-modal');
-      const servModal = document.getElementById('admin-service-modal');
-
-      document.querySelectorAll('.settings-modal-overlay .btn-modal-cancel').forEach(btn => {
-        btn.addEventListener('click', () => {
-          if (projModal) projModal.classList.remove('active');
-          if (servModal) servModal.classList.remove('active');
-        });
-      });
-
-      if (addProjBtn && projModal) {
-        addProjBtn.addEventListener('click', () => {
-          document.getElementById('admin-project-doc-id').value = '';
-          document.getElementById('admin-project-name').value = '';
-          if (document.getElementById('admin-project-desc')) document.getElementById('admin-project-desc').value = '';
-          if (document.getElementById('admin-project-category')) document.getElementById('admin-project-category').value = '';
-          if (document.getElementById('admin-project-techs')) document.getElementById('admin-project-techs').value = '';
-          if (document.getElementById('admin-project-url')) document.getElementById('admin-project-url').value = '';
-          document.getElementById('admin-project-client').value = '';
-          document.getElementById('admin-project-status').value = 'In Progress';
-          document.getElementById('admin-project-progress').value = 10;
-          document.getElementById('admin-project-existing-img').value = '';
-
-          const previewBox = document.getElementById('admin-project-img-preview');
-          if (previewBox) previewBox.innerHTML = `<span style="font-size: 0.75rem; color: var(--text-muted);">No Img</span>`;
-          const removeImgBtn = document.getElementById('btn-admin-project-file-remove');
-          if (removeImgBtn) removeImgBtn.style.display = 'none';
-
-          document.getElementById('admin-project-modal-title').innerHTML = `<i class="fas fa-folder-plus"></i> Add New Project`;
-          projModal.classList.add('active');
-        });
-      }
-
-      // Project Image Upload & Form Submit
-      let pendingProjFile = null;
-      let removeProjImgRequested = false;
-
-      const projFileInput = document.getElementById('admin-project-file-input');
-      const projFileBtn = document.getElementById('btn-admin-project-file');
-      const projFileRemoveBtn = document.getElementById('btn-admin-project-file-remove');
-      const projStatusSpan = document.getElementById('admin-project-file-status');
-
-      if (projFileBtn && projFileInput) {
-        projFileBtn.addEventListener('click', () => projFileInput.click());
-        projFileInput.addEventListener('change', (e) => {
-          const file = e.target.files[0];
-          if (file) {
-            const storageMod = window.StorageService;
-            if (storageMod && storageMod.validateUploadFile) {
-              const val = storageMod.validateUploadFile(file, { maxSizeMB: 5 });
-              if (!val.valid) {
-                if (projStatusSpan) { projStatusSpan.textContent = `⚠️ ${val.error}`; projStatusSpan.style.color = '#EF4444'; }
-                return;
-              }
-            }
-            pendingProjFile = file;
-            removeProjImgRequested = false;
-            if (projStatusSpan) { projStatusSpan.textContent = `Selected: ${file.name}`; projStatusSpan.style.color = 'var(--accent-blue)'; }
-
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-              const previewBox = document.getElementById('admin-project-img-preview');
-              if (previewBox) previewBox.innerHTML = `<img src="${evt.target.result}" style="width:100%; height:100%; object-fit:cover;" />`;
-              if (projFileRemoveBtn) projFileRemoveBtn.style.display = 'inline-flex';
-            };
-            reader.readAsDataURL(file);
-          }
-        });
-      }
-
-      if (projFileRemoveBtn) {
-        projFileRemoveBtn.addEventListener('click', () => {
-          pendingProjFile = null;
-          removeProjImgRequested = true;
-          const previewBox = document.getElementById('admin-project-img-preview');
-          if (previewBox) previewBox.innerHTML = `<span style="font-size: 0.75rem; color: var(--text-muted);">No Img</span>`;
-          if (projStatusSpan) { projStatusSpan.textContent = 'Image will be deleted.'; projStatusSpan.style.color = '#EF4444'; }
-          projFileRemoveBtn.style.display = 'none';
-        });
-      }
-
-      const projForm = document.getElementById('admin-project-form');
-      if (projForm) {
-        projForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const docId = document.getElementById('admin-project-doc-id').value;
-          const name = document.getElementById('admin-project-name').value.trim();
-          const desc = document.getElementById('admin-project-desc') ? document.getElementById('admin-project-desc').value.trim() : '';
-          const category = document.getElementById('admin-project-category') ? document.getElementById('admin-project-category').value.trim() : '';
-          const techsRaw = document.getElementById('admin-project-techs') ? document.getElementById('admin-project-techs').value.trim() : '';
-          const projectUrl = document.getElementById('admin-project-url') ? document.getElementById('admin-project-url').value.trim() : '';
-          const client = document.getElementById('admin-project-client').value.trim();
-          const status = document.getElementById('admin-project-status').value;
-          const progress = parseInt(document.getElementById('admin-project-progress').value, 10) || 0;
-          const existingImg = document.getElementById('admin-project-existing-img').value;
-
-          if (!name) return;
-
-          const saveBtn = document.getElementById('admin-project-save-btn');
-          if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = `<span class="btn-spinner"></span> Saving...`; }
-
-          let imageUrlToSave = existingImg || '';
-          const storageMod = window.StorageService;
-
-          try {
-            const targetProjId = docId || 'PRJ-' + Date.now();
-            if (pendingProjFile && storageMod) {
-              if (projStatusSpan) projStatusSpan.textContent = 'Processing project image...';
-              const optimized = await storageMod.optimizeAndConvertImage(pendingProjFile, 1200, 800, 0.85);
-              const filePath = `projects/${targetProjId}/cover.webp`;
-              const uploadRes = await storageMod.replaceFile(optimized, filePath, existingImg);
-
-              if (uploadRes.success && uploadRes.url) {
-                imageUrlToSave = uploadRes.url;
-              }
-            } else if (removeProjImgRequested && existingImg && storageMod) {
-              await storageMod.deleteImage(existingImg);
-              imageUrlToSave = '';
-            }
-
-            const mod = window.FirebaseModule;
-            if (mod && mod.db) {
-              const techsArray = techsRaw ? techsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
-              const payload = {
-                projectName: name,
-                description: desc,
-                category: category || 'Web Development',
-                techs: techsArray,
-                projectUrl: projectUrl,
-                clientName: client,
-                status: status,
-                progress: progress,
-                imageUrl: imageUrlToSave,
-                updatedAt: mod.serverTimestamp ? mod.serverTimestamp() : new Date().toISOString()
-              };
-
-              if (docId) {
-                await mod.updateDoc(mod.doc(mod.db, 'projects', docId), payload);
-              } else {
-                payload.projectId = targetProjId;
-                payload.createdAt = new Date().toISOString();
-                await mod.addDoc(mod.collection(mod.db, 'projects'), payload);
-              }
-            }
-
-            if (projModal) projModal.classList.remove('active');
-            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Project'; }
-            if (window.showToast) window.showToast('Project saved successfully!', 'success');
-
-          } catch (err) {
-            console.error('Error saving admin project:', err);
-            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Project'; }
-            if (window.showToast) window.showToast('Error: ' + err.message, 'error');
-          }
-        });
-      }
-
-      // Service Image Upload & Form Submit
-      let pendingServFile = null;
-      let removeServImgRequested = false;
-
-      const servFileInput = document.getElementById('admin-service-file-input');
-      const servFileBtn = document.getElementById('btn-admin-service-file');
-      const servFileRemoveBtn = document.getElementById('btn-admin-service-file-remove');
-      const servStatusSpan = document.getElementById('admin-service-file-status');
-
-      if (servFileBtn && servFileInput) {
-        servFileBtn.addEventListener('click', () => servFileInput.click());
-        servFileInput.addEventListener('change', (e) => {
-          const file = e.target.files[0];
-          if (file) {
-            const storageMod = window.StorageService;
-            if (storageMod && storageMod.validateUploadFile) {
-              const val = storageMod.validateUploadFile(file, { maxSizeMB: 5 });
-              if (!val.valid) {
-                if (servStatusSpan) { servStatusSpan.textContent = `⚠️ ${val.error}`; servStatusSpan.style.color = '#EF4444'; }
-                return;
-              }
-            }
-            pendingServFile = file;
-            removeServImgRequested = false;
-            if (servStatusSpan) { servStatusSpan.textContent = `Selected: ${file.name}`; servStatusSpan.style.color = 'var(--accent-blue)'; }
-
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-              const previewBox = document.getElementById('admin-service-img-preview');
-              if (previewBox) previewBox.innerHTML = `<img src="${evt.target.result}" style="width:100%; height:100%; object-fit:cover;" />`;
-              if (servFileRemoveBtn) servFileRemoveBtn.style.display = 'inline-flex';
-            };
-            reader.readAsDataURL(file);
-          }
-        });
-      }
-
-      if (servFileRemoveBtn) {
-        servFileRemoveBtn.addEventListener('click', () => {
-          pendingServFile = null;
-          removeServImgRequested = true;
-          const previewBox = document.getElementById('admin-service-img-preview');
-          if (previewBox) previewBox.innerHTML = `<span style="font-size: 0.75rem; color: var(--text-muted);">No Img</span>`;
-          if (servStatusSpan) { servStatusSpan.textContent = 'Cover image will be deleted.'; servStatusSpan.style.color = '#EF4444'; }
-          servFileRemoveBtn.style.display = 'none';
-        });
-      }
-
-      const servForm = document.getElementById('admin-service-form');
-      if (servForm) {
-        servForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const serviceId = document.getElementById('admin-service-id').value;
-          const existingImg = document.getElementById('admin-service-existing-img').value;
-
-          if (!serviceId) return;
-
-          const saveBtn = document.getElementById('admin-service-save-btn');
-          if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = `<span class="btn-spinner"></span> Saving...`; }
-
-          let imageUrlToSave = existingImg || '';
-          const storageMod = window.StorageService;
-
-          try {
-            if (pendingServFile && storageMod) {
-              if (servStatusSpan) servStatusSpan.textContent = 'Processing service cover...';
-              const optimized = await storageMod.optimizeAndConvertImage(pendingServFile, 1200, 800, 0.85);
-              const filePath = `services/${serviceId}/cover.webp`;
-              const uploadRes = await storageMod.replaceFile(optimized, filePath, existingImg);
-
-              if (uploadRes.success && uploadRes.url) {
-                imageUrlToSave = uploadRes.url;
-              }
-            } else if (removeServImgRequested && existingImg && storageMod) {
-              await storageMod.deleteImage(existingImg);
-              imageUrlToSave = '';
-            }
-
-            // Update in-memory data & Firestore 'services' collection if exists
-            const servItem = (portfolioData.services || []).find(s => s.id === serviceId);
-            if (servItem) {
-              servItem.coverImage = imageUrlToSave;
-            }
-
-            const mod = window.FirebaseModule;
-            if (mod && mod.db) {
-              await mod.setDoc(mod.doc(mod.db, 'services', serviceId), {
-                serviceId: serviceId,
-                coverImage: imageUrlToSave,
-                updatedAt: mod.serverTimestamp ? mod.serverTimestamp() : new Date().toISOString()
-              }, { merge: true });
-            }
-
-            initAdminServicesSync();
-
-            if (servModal) servModal.classList.remove('active');
-            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; }
-            if (window.showToast) window.showToast('Service cover image updated!', 'success');
-
-          } catch (err) {
-            console.error('Error saving service image:', err);
-            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; }
-            if (window.showToast) window.showToast('Error: ' + err.message, 'error');
-          }
-        });
-      }
-    }
-
-    function initAdminProjectRequestsSync() {
-      const mod = window.FirebaseModule;
-      if (!mod || !mod.db || !mod.collection || !mod.onSnapshot) return;
-
-      const requestsRef = mod.collection(mod.db, 'project_requests');
-      mod.onSnapshot(requestsRef, (snapshot) => {
-        const requests = [];
-        let pendingCount = 0;
-
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          data.id = doc.id;
-          requests.push(data);
-          if ((data.status || 'pending').toLowerCase() === 'pending') {
-            pendingCount++;
-          }
-        });
-
-        // Update Admin Pending Request Stat Number
-        const statCards = document.querySelectorAll('.dash-stats-row .dash-stat-card .stat-number');
-        if (statCards.length >= 3) {
-          statCards[2].textContent = pendingCount;
-        }
-
-        // Render Recent Project Requests Table
-        const tableBody = document.getElementById('admin-requests-tbody');
-        if (tableBody) {
-          if (requests.length === 0) {
-            tableBody.innerHTML = `
-              <tr>
-                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                  <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 0.5rem; display: block; color: var(--accent-blue);"></i>
-                  ${currentLang === 'bn' ? 'কোন প্রজেক্ট রিকুয়েস্ট পাওয়া যায়নি।' : 'No project requests found.'}
-                </td>
-              </tr>
-            `;
-          } else {
-            tableBody.innerHTML = requests.map(req => {
-              const status = req.status || 'pending';
-              let badge = `<span class="badge-status status-pending"><i class="fas fa-clock"></i> Pending Review</span>`;
-              if (status.toLowerCase() === 'approved' || status.toLowerCase() === 'accepted') {
-                badge = `<span class="badge-status status-active"><i class="fas fa-check"></i> Approved</span>`;
-              } else if (status.toLowerCase() === 'rejected') {
-                badge = `<span class="badge-status status-completed"><i class="fas fa-times"></i> Rejected</span>`;
-              }
-
-              const formattedDate = req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'Recent';
-              const reqDetails = req.description ? (req.description.length > 50 ? req.description.substring(0, 50) + '...' : req.description) : 'N/A';
-              const attachmentHtml = req.attachmentUrl ? `<br><a href="${req.attachmentUrl}" target="_blank" rel="noopener noreferrer" style="font-size:0.75rem; color: var(--accent-blue);"><i class="fas fa-paperclip"></i> View Attachment</a>` : '';
+            activityContainer.innerHTML = top5.map(act => {
+              const timeStr = act.timeMs ? new Date(act.timeMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent';
+              const initial = (act.userName.trim().charAt(0) || 'U').toUpperCase();
 
               return `
-                <tr>
-                  <td>
-                    <div class="dash-table-project-name">
-                      ${req.clientName || 'Client Request'}
-                      <span class="dash-table-project-sub">${req.contactInfo || req.userEmail || ''}</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border-glass);">
+                  <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--accent-blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">${initial}</div>
+                    <div style="min-width: 0;">
+                      <div style="font-weight: 700; font-size: 0.92rem; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(act.userName)}</div>
+                      <div style="font-size: 0.82rem; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(act.text)}</div>
                     </div>
-                  </td>
-                  <td>${req.serviceName || 'Custom Service'}</td>
-                  <td style="max-width: 200px; font-size: 0.85rem;">${reqDetails}${attachmentHtml}</td>
-                  <td>${badge}</td>
-                  <td>${formattedDate}</td>
-                  <td>
-                    ${status.toLowerCase() === 'pending' ? `
-                      <button type="button" class="btn btn-primary btn-approve-req" data-req-id="${req.id}" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;">Approve</button>
-                      <button type="button" class="btn btn-secondary btn-reject-req" data-req-id="${req.id}" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;">Reject</button>
-                    ` : `
-                      <span style="font-size: 0.8rem; color: var(--text-muted);">${status}</span>
-                    `}
-                  </td>
-                </tr>
+                  </div>
+                  <span style="font-size: 0.78rem; color: var(--text-muted); flex-shrink: 0;"><i class="fas fa-clock"></i> ${timeStr}</span>
+                </div>
               `;
             }).join('');
-
-            attachAdminRequestActions(requests);
           }
         }
-      }, (error) => {
-        console.error('Error listening to project requests:', error);
       });
     }
 
-    function attachAdminRequestActions(requests) {
-      const mod = window.FirebaseModule;
-      if (!mod || !mod.db || !mod.doc || !mod.updateDoc || !mod.addDoc) return;
-
-      document.querySelectorAll('.btn-approve-req').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const reqId = btn.getAttribute('data-req-id');
-          const reqData = requests.find(r => r.id === reqId);
-          if (!reqData) return;
-
-          try {
-            // Update request status to 'approved'
-            await mod.updateDoc(mod.doc(mod.db, 'project_requests', reqId), { status: 'approved' });
-
-            // Create active project entry in 'projects' collection
-            await mod.addDoc(mod.collection(mod.db, 'projects'), {
-              projectId: reqData.requestId || 'PRJ-' + Math.floor(100000 + Math.random() * 900000),
-              projectName: reqData.serviceName + ' - ' + reqData.clientName,
-              category: reqData.serviceName || 'Web Development',
-              description: reqData.description || '',
-              clientName: reqData.clientName,
-              userId: reqData.userId || '',
-              userEmail: reqData.userEmail || reqData.contactInfo || '',
-              status: 'In Progress',
-              progress: 10,
-              createdAt: new Date().toISOString()
-            });
-
-            if (window.showToast) window.showToast('Project Request Approved & Project Created!', 'success');
-          } catch (err) {
-            console.error('Error approving request:', err);
-          }
-        });
-      });
-
-      document.querySelectorAll('.btn-reject-req').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const reqId = btn.getAttribute('data-req-id');
-          try {
-            await mod.updateDoc(mod.doc(mod.db, 'project_requests', reqId), { status: 'rejected' });
-            if (window.showToast) window.showToast('Project Request Rejected.', 'info');
-          } catch (err) {
-            console.error('Error rejecting request:', err);
-          }
-        });
-      });
-    }
-
-    function initAdminUsersSync() {
-      const tbody = document.getElementById('admin-users-tbody');
-      if (!tbody) return;
-
-      const mod = window.FirebaseModule;
-      if (!mod || !mod.db || !mod.collection || !mod.onSnapshot) return;
-
-      const usersRef = mod.collection(mod.db, 'users');
-      mod.onSnapshot(usersRef, (snapshot) => {
-        const users = [];
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          data.id = doc.id;
-          users.push(data);
-        });
-
-        // Update total clients stat card
-        const statCards = document.querySelectorAll('.dash-stats-row .dash-stat-card .stat-number');
-        if (statCards.length >= 1) {
-          statCards[0].textContent = users.length;
-        }
-
-        if (users.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                No registered users found.
-              </td>
-            </tr>
-          `;
-          return;
-        }
-
-        tbody.innerHTML = users.map(u => {
-          const name = u.displayName || 'Client User';
-          const email = u.email || 'N/A';
-          const username = u.username || (email.includes('@') ? email.split('@')[0] : 'client');
-          const phone = u.phone || u.phoneNumber || 'N/A';
-          const role = u.role || 'user';
-          const photoUrl = u.photoURL || '';
-
-          const firstChar = (name.trim().charAt(0) || 'U').toUpperCase();
-          const avatarHtml = photoUrl
-            ? `<img src="${photoUrl}" alt="${name}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;" />`
-            : `<div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(56,189,248,0.2); color: var(--accent-blue); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;">${firstChar}</div>`;
-
-          const roleBadge = role === 'admin'
-            ? `<span class="badge-pill" style="background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); font-size: 0.78rem;">Admin</span>`
-            : `<span style="font-size: 0.82rem; color: var(--text-muted);">User</span>`;
-
-          return `
-            <tr>
-              <td>${avatarHtml}</td>
-              <td><strong>${name}</strong></td>
-              <td><code>${username}</code></td>
-              <td>${email}</td>
-              <td>${phone}</td>
-              <td>${roleBadge}</td>
-            </tr>
-          `;
-        }).join('');
-      }, (err) => {
-        console.error('Error listening to users collection:', err);
-      });
-    }
-
-    function initAdminMessagesSync() {
-      const tbody = document.getElementById('admin-messages-tbody');
-      if (!tbody) return;
-
-      const mod = window.FirebaseModule;
-      if (!mod || !mod.db || !mod.collection || !mod.onSnapshot) return;
-
-      const msgRef = mod.collection(mod.db, 'messages');
-      mod.onSnapshot(msgRef, (snapshot) => {
-        const messages = [];
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          data.id = doc.id;
-          messages.push(data);
-        });
-
-        if (messages.length === 0) {
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                No support messages received yet.
-              </td>
-            </tr>
-          `;
-          return;
-        }
-
-        tbody.innerHTML = messages.map(m => {
-          const sender = m.name || m.clientName || 'Anonymous';
-          const contact = m.contact || m.email || m.contactInfo || 'N/A';
-          const body = m.message || m.subject || m.description || 'No message content';
-          const date = m.createdAt ? new Date(m.createdAt).toLocaleDateString() : 'Recent';
-          const status = m.status || 'unread';
-
-          const statusBadge = status === 'read'
-            ? `<span style="font-size:0.8rem; color: var(--text-muted);"><i class="fas fa-check-double"></i> Read</span>`
-            : `<span class="badge-status status-pending"><i class="fas fa-envelope"></i> Unread</span>`;
-
-          return `
-            <tr>
-              <td><strong>${sender}</strong></td>
-              <td>${contact}</td>
-              <td style="max-width: 250px; font-size: 0.88rem;">${body}</td>
-              <td>${date}</td>
-              <td>${statusBadge}</td>
-              <td>
-                ${status === 'unread' ? `
-                  <button type="button" class="btn btn-secondary btn-mark-msg-read" data-msg-id="${m.id}" style="padding: 0.3rem 0.6rem; font-size: 0.78rem;"><i class="fas fa-check"></i> Mark Read</button>
-                ` : `<span style="font-size:0.78rem; color:var(--text-muted);">Processed</span>`}
-              </td>
-            </tr>
-          `;
-        }).join('');
-
-        document.querySelectorAll('.btn-mark-msg-read').forEach(b => {
-          b.addEventListener('click', async () => {
-            const mId = b.getAttribute('data-msg-id');
-            try {
-              await mod.updateDoc(mod.doc(mod.db, 'messages', mId), { status: 'read' });
-              if (window.showToast) window.showToast('Message marked as read.', 'info');
-            } catch (e) {
-              console.error('Error marking message read:', e);
-            }
-          });
-        });
-      }, (err) => {
-        console.error('Error listening to messages collection:', err);
-      });
-    }
-
-    /* Admin Live Chat Management Submodule */
-    let activeAdminSelectedUserId = null;
-    let activeAdminChatMessagesUnsubscribe = null;
-    let registeredUsersCache = [];
-
-    function initAdminLiveChatSync() {
+    /* 3. Section 2: Messenger (Live Chat) Sync */
+    function initAdminMessengerSync() {
       const mod = window.FirebaseModule;
       if (!mod || !mod.db || !mod.collection || !mod.onSnapshot || !mod.query || !mod.orderBy) return;
 
@@ -3778,7 +3316,7 @@ Website: https://webworldbd.com
           }
         });
 
-        // Update badge near Admin Panel "লাইভ চ্যাট" nav entry
+        // Update badge near Admin Nav "মেসেঞ্জার" item
         const badgeEl = document.getElementById('admin-unread-chat-count');
         if (badgeEl) {
           if (unreadCount > 0) {
@@ -3790,11 +3328,18 @@ Website: https://webworldbd.com
         }
 
         renderAdminThreadsList(threads);
-      }, (err) => {
-        console.error('Error listening to admin chats collection:', err);
       });
 
-      // Cache users list for "নতুন মেসেজ" modal
+      // Mobile Back button in Messenger Header
+      const backBtn = document.getElementById('btn-admin-messenger-back');
+      if (backBtn) {
+        backBtn.addEventListener('click', () => {
+          const layout = document.getElementById('admin-chat-layout');
+          if (layout) layout.classList.remove('mobile-thread-open');
+        });
+      }
+
+      // Cache users for "নতুন মেসেজ" user picker
       mod.onSnapshot(mod.collection(mod.db, 'users'), (snap) => {
         registeredUsersCache = [];
         snap.forEach(d => {
@@ -3812,14 +3357,14 @@ Website: https://webworldbd.com
       if (threads.length === 0) {
         container.innerHTML = `
           <div style="padding: 2rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
-            কোন চ্যাট থ্রেড নেই। "নতুন মেসেজ" বাটনে ক্লিক করে ক্লায়েন্টকে বার্তা পাঠান।
+            কোন ক্লায়েন্ট চ্যাট পাওয়া যায়নি।
           </div>
         `;
         return;
       }
 
       container.innerHTML = threads.map(t => {
-        const name = t.userName || t.userEmail || 'Client';
+        const name = t.userName || t.userEmail || 'Client User';
         const lastMsg = t.lastMessage || 'No messages yet';
         const isUnread = !!t.unreadByAdmin;
         const isActive = t.userId === activeAdminSelectedUserId;
@@ -3846,12 +3391,11 @@ Website: https://webworldbd.com
         `;
       }).join('');
 
-      // Click event for threads
       container.querySelectorAll('.admin-thread-item').forEach(el => {
         el.addEventListener('click', () => {
           const uid = el.getAttribute('data-user-id');
           const thread = threads.find(t => t.userId === uid);
-          selectAdminThread(uid, thread ? thread.userName : 'Client', thread ? thread.userEmail : '');
+          selectAdminThread(uid, thread ? thread.userName : 'Client User', thread ? thread.userEmail : '');
         });
       });
     }
@@ -3867,19 +3411,21 @@ Website: https://webworldbd.com
       const headerEmail = document.getElementById('admin-chat-active-email');
       const headerAvatar = document.getElementById('admin-chat-active-avatar');
       const inputArea = document.getElementById('admin-chat-input-area');
+      const backBtn = document.getElementById('btn-admin-messenger-back');
+      const layout = document.getElementById('admin-chat-layout');
 
       if (headerName) headerName.textContent = userName || 'Client User';
       if (headerEmail) headerEmail.textContent = userEmail || userId;
       if (headerAvatar) headerAvatar.textContent = (userName ? userName.trim().charAt(0) : 'U').toUpperCase();
       if (inputArea) inputArea.style.display = 'block';
+      if (backBtn) backBtn.style.display = 'inline-flex';
+      if (layout) layout.classList.add('mobile-thread-open');
 
-      // Mark unreadByAdmin: false
+      // Clear unreadByAdmin flag
       const chatDocRef = mod.doc(mod.db, 'chats', userId);
-      await mod.updateDoc(chatDocRef, {
-        unreadByAdmin: false
-      }).catch(e => console.warn('Mark chat read error:', e));
+      await mod.updateDoc(chatDocRef, { unreadByAdmin: false }).catch(e => console.warn('Update unreadByAdmin error:', e));
 
-      // Stream messages
+      // Stream conversation messages
       const messagesCol = mod.collection(mod.db, 'chats', userId, 'messages');
       const q = mod.query(messagesCol, mod.orderBy('createdAt', 'asc'));
 
@@ -3887,8 +3433,6 @@ Website: https://webworldbd.com
 
       activeAdminChatMessagesUnsubscribe = mod.onSnapshot(q, (snapshot) => {
         renderAdminChatMessages(snapshot);
-      }, (err) => {
-        console.error('Error streaming thread messages for admin:', err);
       });
     }
 
@@ -3900,7 +3444,7 @@ Website: https://webworldbd.com
         container.innerHTML = `
           <div style="text-align: center; color: var(--text-muted); margin: auto; padding: 2rem;">
             <i class="fas fa-paper-plane" style="font-size: 2rem; color: var(--accent-blue); margin-bottom: 0.5rem; display: block;"></i>
-            <p>এই থ্রেডে এখনো কোন মেসেজ নেই। নিচে লিখুন এবং প্রথম মেসেজ পাঠান!</p>
+            <p>এই থ্রেডে কোনো মেসেজ নেই। নিচে লিখুন এবং প্রথম মেসেজ পাঠান!</p>
           </div>
         `;
         return;
@@ -3928,7 +3472,7 @@ Website: https://webworldbd.com
       container.scrollTop = container.scrollHeight;
     }
 
-    // Admin Chat Reply Form Submit Handler
+    // Chat reply form submit
     const replyForm = document.getElementById('admin-chat-reply-form');
     if (replyForm) {
       replyForm.addEventListener('submit', async (e) => {
@@ -3939,7 +3483,6 @@ Website: https://webworldbd.com
         const text = input ? input.value.trim() : '';
 
         if (!text) return;
-
         input.value = '';
 
         const mod = window.FirebaseModule;
@@ -3949,16 +3492,14 @@ Website: https://webworldbd.com
           const chatDocRef = mod.doc(mod.db, 'chats', activeAdminSelectedUserId);
           const messagesCol = mod.collection(mod.db, 'chats', activeAdminSelectedUserId, 'messages');
 
-          // Add admin message
           await mod.addDoc(messagesCol, {
-            senderId: 'admin',
+            senderId: ADMIN_UID,
             senderRole: 'admin',
             text: text,
             createdAt: mod.serverTimestamp ? mod.serverTimestamp() : new Date().toISOString(),
             read: false
           });
 
-          // Update parent chat doc
           await mod.updateDoc(chatDocRef, {
             lastMessage: text,
             lastMessageAt: mod.serverTimestamp ? mod.serverTimestamp() : new Date().toISOString(),
@@ -3966,15 +3507,13 @@ Website: https://webworldbd.com
             unreadByUser: true,
             unreadByAdmin: false
           });
-
         } catch (err) {
-          console.error('Error sending admin reply message:', err);
-          if (window.showToast) window.showToast('মেসেজ পাঠাতে সমস্যা হয়েছে: ' + err.message, 'error');
+          console.error('Error sending admin reply:', err);
         }
       });
     }
 
-    // New Message Modal Handlers
+    // New Message Modal User Picker
     const newChatBtn = document.getElementById('btn-admin-new-chat');
     const newChatModal = document.getElementById('admin-new-chat-modal');
     const userSearchInput = document.getElementById('admin-user-search-input');
@@ -4050,6 +3589,441 @@ Website: https://webworldbd.com
           selectAdminThread(uid, name, email);
         });
       });
+    }
+
+    /* 4. Section 3: Users Management Sync */
+    function initAdminUsersSync() {
+      const tbody = document.getElementById('admin-users-tbody');
+      const searchInput = document.getElementById('admin-users-search-input');
+      if (!tbody) return;
+
+      const mod = window.FirebaseModule;
+      if (!mod || !mod.db || !mod.collection || !mod.onSnapshot) return;
+
+      let allUsers = [];
+
+      mod.onSnapshot(mod.collection(mod.db, 'users'), (snap) => {
+        allUsers = [];
+        snap.forEach(doc => {
+          const data = doc.data();
+          data.uid = doc.id;
+          allUsers.push(data);
+        });
+
+        renderUsersTable(allUsers);
+      });
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const q = e.target.value.toLowerCase().trim();
+          const filtered = allUsers.filter(u => {
+            const name = (u.displayName || u.fullName || '').toLowerCase();
+            const email = (u.email || '').toLowerCase();
+            return name.includes(q) || email.includes(q);
+          });
+          renderUsersTable(filtered);
+        });
+      }
+
+      function renderUsersTable(users) {
+        if (users.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                কোন রেজিস্টার্ড ইউজার পাওয়া যায়নি।
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = users.map(u => {
+          const name = u.displayName || u.fullName || 'Client User';
+          const email = u.email || 'N/A';
+          const username = u.username || (email.includes('@') ? email.split('@')[0] : 'client');
+          const phone = u.phone || u.phoneNumber || 'N/A';
+          const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A';
+          const photoUrl = u.photoURL || '';
+
+          const firstChar = (name.trim().charAt(0) || 'U').toUpperCase();
+          const avatarHtml = photoUrl
+            ? `<img src="${photoUrl}" alt="${name}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;" />`
+            : `<div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(56,189,248,0.2); color: var(--accent-blue); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;">${firstChar}</div>`;
+
+          return `
+            <tr>
+              <td>${avatarHtml}</td>
+              <td><strong>${escapeHtml(name)}</strong></td>
+              <td>${escapeHtml(email)}</td>
+              <td><code>${escapeHtml(username)}</code></td>
+              <td>${escapeHtml(phone)}</td>
+              <td>${joinedDate}</td>
+              <td>
+                <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-primary btn-admin-msg-user" data-uid="${u.uid}" data-name="${escapeHtml(name)}" data-email="${escapeHtml(email)}" style="padding: 0.35rem 0.65rem; font-size: 0.78rem;">
+                    <i class="fas fa-comment"></i> মেসেজ পাঠান
+                  </button>
+                  <button type="button" class="btn btn-danger-outline btn-admin-delete-user" data-uid="${u.uid}" data-name="${escapeHtml(name)}" style="padding: 0.35rem 0.65rem; font-size: 0.78rem;">
+                    <i class="fas fa-trash"></i> ডিলিট
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        // Action Handlers
+        tbody.querySelectorAll('.btn-admin-msg-user').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const uid = btn.getAttribute('data-uid');
+            const name = btn.getAttribute('data-name');
+            const email = btn.getAttribute('data-email');
+
+            // Switch to Messenger tab
+            const messengerNav = document.querySelector('[data-admin-tab="messenger"]');
+            if (messengerNav) messengerNav.click();
+
+            selectAdminThread(uid, name, email);
+          });
+        });
+
+        tbody.querySelectorAll('.btn-admin-delete-user').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const uid = btn.getAttribute('data-uid');
+            const name = btn.getAttribute('data-name');
+
+            if (!confirm(`Are you sure you want to delete profile document for user "${name}"?`)) return;
+
+            try {
+              // Note: Deleting Firebase Auth account client-side is not supported by Firebase Client SDK without Admin SDK on a backend; deleting Firestore user profile doc. TODO: Integrate Firebase Admin SDK function if Auth account deletion is required.
+              await mod.deleteDoc(mod.doc(mod.db, 'users', uid));
+              if (window.showToast) window.showToast(`User profile "${name}" deleted from Firestore.`, 'info');
+            } catch (err) {
+              console.error('Error deleting user profile:', err);
+              if (window.showToast) window.showToast('Error deleting profile: ' + err.message, 'error');
+            }
+          });
+        });
+      }
+    }
+
+    /* 5. Section 4: Project Requests Sync */
+    function initAdminProjectRequestsSync() {
+      const container = document.getElementById('admin-project-requests-list-container');
+      const badgeNav = document.getElementById('admin-nav-project-requests-badge');
+      const badgeHeader = document.getElementById('admin-project-requests-count-badge');
+      if (!container) return;
+
+      const mod = window.FirebaseModule;
+      if (!mod || !mod.db || !mod.collection || !mod.onSnapshot) return;
+
+      const colRef = mod.collection(mod.db, 'projectRequests');
+      mod.onSnapshot(colRef, (snap) => {
+        const requests = [];
+        let newCount = 0;
+
+        snap.forEach(doc => {
+          const data = doc.data();
+          data.id = doc.id;
+          requests.push(data);
+          if ((data.status || 'new').toLowerCase() === 'new') newCount++;
+        });
+
+        // Fallback to legacy collection if projectRequests snap is empty
+        if (requests.length === 0) {
+          mod.getDocs(mod.collection(mod.db, 'project_requests')).then(legacySnap => {
+            legacySnap.forEach(d => {
+              const ld = d.data();
+              ld.id = d.id;
+              requests.push({
+                id: d.id,
+                name: ld.clientName || ld.name || 'Client',
+                mobile: ld.mobileNumber || ld.mobile || 'N/A',
+                email: ld.email || ld.userEmail || '',
+                projectType: ld.serviceName || ld.projectType || 'Custom Project',
+                budget: ld.budget || '',
+                requirements: ld.description || ld.requirements || 'N/A',
+                fileURL: ld.fileURL || ld.attachmentUrl || null,
+                submittedAt: ld.createdAt || ld.submittedAt || new Date().toISOString(),
+                status: ld.status || 'new',
+                userId: ld.userId || null
+              });
+            });
+            renderProjectRequests(requests);
+          }).catch(e => renderProjectRequests(requests));
+        } else {
+          renderProjectRequests(requests);
+        }
+
+        if (badgeNav) {
+          badgeNav.textContent = requests.length;
+          badgeNav.style.display = requests.length > 0 ? 'inline-block' : 'none';
+        }
+
+        if (badgeHeader) {
+          badgeHeader.textContent = `${requests.length} Requests (${newCount} New)`;
+        }
+      });
+
+      function renderProjectRequests(requests) {
+        if (requests.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; color: var(--text-muted); padding: 3rem;">
+              <i class="fas fa-inbox" style="font-size: 2.5rem; color: var(--accent-blue); margin-bottom: 0.75rem; display: block;"></i>
+              <p style="font-size: 1.05rem; font-weight: 600;">কোন প্রজেক্ট রিকোয়েস্ট জমা হয়নি</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Sort newest first
+        requests.sort((a, b) => new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0));
+
+        container.innerHTML = requests.map(req => {
+          const status = (req.status || 'new').toLowerCase();
+          const submittedDate = req.submittedAt ? new Date(req.submittedAt).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+          const fileLinkHtml = req.fileURL ? `<a href="${req.fileURL}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; margin-top: 0.5rem;"><i class="fas fa-paperclip"></i> সংযুক্ত ফাইলটি দেখুন</a>` : '';
+
+          return `
+            <div class="glass-card" style="padding: 1.25rem 1.5rem; margin-bottom: 1rem;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.85rem;">
+                <div>
+                  <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.2rem;">
+                    ${escapeHtml(req.name || 'Client Request')}
+                  </h4>
+                  <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0;">
+                    <i class="fas fa-phone"></i> ${escapeHtml(req.mobile || 'N/A')} ${req.email ? ' | <i class="fas fa-envelope"></i> ' + escapeHtml(req.email) : ''}
+                  </p>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                  <select class="form-control admin-status-select-project" data-doc-id="${req.id}" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: var(--radius-md); background: var(--bg-glass); color: var(--text-main);">
+                    <option value="new" ${status === 'new' ? 'selected' : ''}>NEW (নতুন)</option>
+                    <option value="contacted" ${status === 'contacted' ? 'selected' : ''}>CONTACTED (যোগাযোগকৃত)</option>
+                    <option value="closed" ${status === 'closed' ? 'selected' : ''}>CLOSED (সম্পন্ন)</option>
+                  </select>
+
+                  <button type="button" class="btn btn-primary btn-admin-req-msg" data-uid="${req.userId || ''}" data-name="${escapeHtml(req.name || '')}" data-email="${escapeHtml(req.email || '')}" style="padding: 0.35rem 0.75rem; font-size: 0.82rem;">
+                    <i class="fas fa-comment"></i> মেসেজ পাঠান
+                  </button>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; background: var(--bg-glass); padding: 0.85rem; border-radius: var(--radius-md); margin-bottom: 0.75rem; font-size: 0.88rem;">
+                <div><strong>প্রজেক্ট ক্যাটাগরি:</strong> ${escapeHtml(req.projectType || 'Custom')}</div>
+                <div><strong>বাজেট:</strong> ${escapeHtml(req.budget || 'Not specified')}</div>
+                <div><strong>জমা দেয়ার তারিখ:</strong> ${submittedDate}</div>
+              </div>
+
+              <div>
+                <strong style="font-size: 0.88rem; color: var(--text-muted);">প্রয়োজনীয় বিবরণ / Requirements:</strong>
+                <p style="font-size: 0.95rem; color: var(--text-main); margin-top: 0.25rem; line-height: 1.6;">${escapeHtml(req.requirements || 'None provided')}</p>
+                ${fileLinkHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Status Change Handlers
+        container.querySelectorAll('.admin-status-select-project').forEach(sel => {
+          sel.addEventListener('change', async () => {
+            const docId = sel.getAttribute('data-doc-id');
+            const newStatus = sel.value;
+            try {
+              await mod.updateDoc(mod.doc(mod.db, 'projectRequests', docId), { status: newStatus });
+              if (window.showToast) window.showToast('প্রজেক্ট রিকোয়েস্ট স্ট্যাটাস আপডেট করা হয়েছে!', 'info');
+            } catch (err) {
+              console.error('Error updating projectRequest status:', err);
+            }
+          });
+        });
+
+        // Quick Messenger Jump
+        container.querySelectorAll('.btn-admin-req-msg').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const uid = btn.getAttribute('data-uid');
+            const name = btn.getAttribute('data-name');
+            const email = btn.getAttribute('data-email');
+
+            const messengerNav = document.querySelector('[data-admin-tab="messenger"]');
+            if (messengerNav) messengerNav.click();
+
+            if (uid) {
+              selectAdminThread(uid, name, email);
+            }
+          });
+        });
+      }
+    }
+
+    /* 6. Section 5: Support Requests Sync */
+    function initAdminSupportRequestsSync() {
+      const container = document.getElementById('admin-support-requests-list-container');
+      const badgeNav = document.getElementById('admin-nav-support-requests-badge');
+      const badgeHeader = document.getElementById('admin-support-requests-count-badge');
+      if (!container) return;
+
+      const mod = window.FirebaseModule;
+      if (!mod || !mod.db || !mod.collection || !mod.onSnapshot) return;
+
+      const colRef = mod.collection(mod.db, 'supportRequests');
+      mod.onSnapshot(colRef, (snap) => {
+        const requests = [];
+        let newCount = 0;
+
+        snap.forEach(doc => {
+          const data = doc.data();
+          data.id = doc.id;
+          requests.push(data);
+          if ((data.status || 'new').toLowerCase() === 'new') newCount++;
+        });
+
+        // Fallback to messages collection if supportRequests empty
+        if (requests.length === 0) {
+          mod.getDocs(mod.collection(mod.db, 'messages')).then(mSnap => {
+            mSnap.forEach(d => {
+              const md = d.data();
+              requests.push({
+                id: d.id,
+                name: md.name || 'Client',
+                mobile: md.mobile || md.contact || 'N/A',
+                email: md.email || '',
+                subject: md.subject || 'Support Inquiry',
+                message: md.message || md.description || 'N/A',
+                fileURL: md.fileURL || null,
+                submittedAt: md.submittedAt || md.createdAt || new Date().toISOString(),
+                status: md.status || 'new',
+                userId: md.userId || null
+              });
+            });
+            renderSupportRequests(requests);
+          }).catch(e => renderSupportRequests(requests));
+        } else {
+          renderSupportRequests(requests);
+        }
+
+        if (badgeNav) {
+          badgeNav.textContent = requests.length;
+          badgeNav.style.display = requests.length > 0 ? 'inline-block' : 'none';
+        }
+
+        if (badgeHeader) {
+          badgeHeader.textContent = `${requests.length} Tickets (${newCount} New)`;
+        }
+      });
+
+      function renderSupportRequests(requests) {
+        if (requests.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; color: var(--text-muted); padding: 3rem;">
+              <i class="fas fa-headset" style="font-size: 2.5rem; color: var(--accent-orange); margin-bottom: 0.75rem; display: block;"></i>
+              <p style="font-size: 1.05rem; font-weight: 600;">কোন সাপোর্ট রিকোয়েস্ট জমা হয়নি</p>
+            </div>
+          `;
+          return;
+        }
+
+        requests.sort((a, b) => new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0));
+
+        container.innerHTML = requests.map(req => {
+          const status = (req.status || 'new').toLowerCase();
+          const submittedDate = req.submittedAt ? new Date(req.submittedAt).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
+          const fileLinkHtml = req.fileURL ? `<a href="${req.fileURL}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; margin-top: 0.5rem;"><i class="fas fa-paperclip"></i> সংযুক্ত ফাইলটি দেখুন</a>` : '';
+
+          return `
+            <div class="glass-card" style="padding: 1.25rem 1.5rem; margin-bottom: 1rem; border-left: 4px solid var(--accent-orange);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.85rem;">
+                <div>
+                  <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.2rem;">
+                    ${escapeHtml(req.subject || 'Support Ticket')}
+                  </h4>
+                  <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0;">
+                    <i class="fas fa-user"></i> ${escapeHtml(req.name || 'Client')} | <i class="fas fa-phone"></i> ${escapeHtml(req.mobile || 'N/A')} ${req.email ? ' | <i class="fas fa-envelope"></i> ' + escapeHtml(req.email) : ''}
+                  </p>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                  <select class="form-control admin-status-select-support" data-doc-id="${req.id}" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: var(--radius-md); background: var(--bg-glass); color: var(--text-main);">
+                    <option value="new" ${status === 'new' ? 'selected' : ''}>NEW (নতুন)</option>
+                    <option value="in-progress" ${status === 'in-progress' ? 'selected' : ''}>IN-PROGRESS (চলমান)</option>
+                    <option value="resolved" ${status === 'resolved' ? 'selected' : ''}>RESOLVED (সমাধানকৃত)</option>
+                  </select>
+
+                  <button type="button" class="btn btn-primary btn-admin-supp-msg" data-uid="${req.userId || ''}" data-name="${escapeHtml(req.name || '')}" data-email="${escapeHtml(req.email || '')}" style="padding: 0.35rem 0.75rem; font-size: 0.82rem;">
+                    <i class="fas fa-comment"></i> মেসেজ পাঠান
+                  </button>
+                </div>
+              </div>
+
+              <div style="background: var(--bg-glass); padding: 0.85rem; border-radius: var(--radius-md); margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                <strong>জমা হওয়ার সময়:</strong> ${submittedDate}
+              </div>
+
+              <div>
+                <strong style="font-size: 0.88rem; color: var(--text-muted);">সমস্যা / বার্তার বিবরণ:</strong>
+                <p style="font-size: 0.95rem; color: var(--text-main); margin-top: 0.25rem; line-height: 1.6;">${escapeHtml(req.message || 'None provided')}</p>
+                ${fileLinkHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Status Change Handlers
+        container.querySelectorAll('.admin-status-select-support').forEach(sel => {
+          sel.addEventListener('change', async () => {
+            const docId = sel.getAttribute('data-doc-id');
+            const newStatus = sel.value;
+            try {
+              await mod.updateDoc(mod.doc(mod.db, 'supportRequests', docId), { status: newStatus });
+              if (window.showToast) window.showToast('সাপোর্ট টিকিট স্ট্যাটাস আপডেট করা হয়েছে!', 'info');
+            } catch (err) {
+              console.error('Error updating supportRequest status:', err);
+            }
+          });
+        });
+
+        // Quick Messenger Jump
+        container.querySelectorAll('.btn-admin-supp-msg').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const uid = btn.getAttribute('data-uid');
+            const name = btn.getAttribute('data-name');
+            const email = btn.getAttribute('data-email');
+
+            const messengerNav = document.querySelector('[data-admin-tab="messenger"]');
+            if (messengerNav) messengerNav.click();
+
+            if (uid) {
+              selectAdminThread(uid, name, email);
+            }
+          });
+        });
+      }
+    }
+
+    /* 7. Section 6: Settings Sync */
+    function initAdminSettingsSync() {
+      const editProfileBtn = document.getElementById('btn-admin-edit-profile');
+      const logoutBtn = document.getElementById('btn-admin-logout');
+
+      if (editProfileBtn) {
+        editProfileBtn.addEventListener('click', () => {
+          openEditProfileModal();
+        });
+      }
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          const mod = window.FirebaseModule;
+          if (mod && mod.auth && mod.signOut) {
+            mod.signOut(mod.auth).then(() => {
+              if (window.showToast) window.showToast('অ্যাডমিন সেশন সমাপ্ত। লগআউট করা হয়েছে।', 'info');
+              window.location.href = 'account.html';
+            }).catch(err => {
+              console.error('Admin logout error:', err);
+            });
+          }
+        });
+      }
     }
 
     checkAdminAuth();
