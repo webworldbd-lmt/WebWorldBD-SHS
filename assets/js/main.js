@@ -2114,6 +2114,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
               if (authCardContainer) authCardContainer.classList.add('authenticated');
 
+              const isAdminUser = user.uid === 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' || user.email === 'webworldbd.lmt@gmail.com' || user.email === 'onlyphone678@gmail.com';
+              let adminBanner = document.getElementById('account-admin-banner');
+
+              if (isAdminUser) {
+                if (!adminBanner) {
+                  adminBanner = document.createElement('div');
+                  adminBanner.id = 'account-admin-banner';
+                  adminBanner.style.cssText = 'background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(59, 130, 246, 0.2) 100%); border: 1px solid var(--accent-blue); border-radius: var(--radius-md, 12px); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.15);';
+                  adminBanner.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 0.85rem;">
+                      <i class="fas fa-shield-halved" style="font-size: 1.75rem; color: var(--accent-blue);"></i>
+                      <div>
+                        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.2rem;">আপনি অ্যাডমিন হিসেবে লগইন করেছেন</h3>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">অ্যাডমিন কন্ট্রোল প্যানেলে গিয়ে ক্লায়েন্ট মেসেজ, ইউজার ও রিকোয়েস্ট ম্যানেজ করুন।</p>
+                      </div>
+                    </div>
+                    <a href="admin.html" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; padding: 0.65rem 1.25rem;">
+                      <i class="fas fa-gauge-high"></i> Admin Panel-এ যান
+                    </a>
+                  `;
+                  userDashView.insertBefore(adminBanner, userDashView.firstChild);
+                } else {
+                  adminBanner.style.display = 'flex';
+                }
+              } else if (adminBanner) {
+                adminBanner.style.display = 'none';
+              }
+
               userDashView.style.display = 'block';
 
               // Sync Firestore projects for Account Dashboard
@@ -3059,7 +3087,7 @@ Website: https://webworldbd.com
      10c. Admin Dashboard UI & Security Authorization Guard
      -------------------------------------------------------------------------- */
   function initAdminDashboardUI() {
-    const isAdminPage = window.location.pathname.endsWith('admin.html');
+    const isAdminPage = document.getElementById('admin-section-overview') !== null || getNormalizedPath() === '/admin';
     if (!isAdminPage) return;
 
     // Show initial loading overlay for Admin route protection
@@ -4904,6 +4932,15 @@ Website: https://webworldbd.com
           window.showToast(currentLang === 'bn' ? 'লাইভ চ্যাট ব্যবহার করতে প্রথমে লগইন করুন।' : 'Please login first to access Live Chat.', 'info');
         }
         window.location.href = 'account.html';
+        return;
+      }
+
+      const isAdminUser = user.uid === 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' || user.email === 'webworldbd.lmt@gmail.com' || user.email === 'onlyphone678@gmail.com';
+      if (isAdminUser) {
+        if (window.showToast) {
+          window.showToast(currentLang === 'bn' ? 'আপনি অ্যাডমিন হিসেবে লগইন করেছেন। অ্যাডমিন মেসেঞ্জারে নিয়ে যাওয়া হচ্ছে...' : 'Logged in as Admin. Redirecting to Admin Messenger...', 'info');
+        }
+        window.location.href = 'admin.html#messenger';
         return;
       }
 
