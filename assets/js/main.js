@@ -214,6 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderMenuContent() {
       const user = window.currentUserState;
       const isLoggedIn = !!user;
+      const isAdmin = user && user.uid === 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2';
 
       const group1 = [
         { type: 'section-header', i18nKey: 'sectionMainMenu' },
@@ -224,6 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'projects', url: `${p}projects.html`, icon: 'fas fa-desktop', i18nKey: 'menuLivePreview' },
         { id: 'connect', url: `${p}contact.html`, icon: 'fas fa-link', i18nKey: 'menuConnect' },
         { id: 'settings', url: `${p}settings.html`, icon: 'fas fa-gear', i18nKey: 'menuSettings' },
+        ...(isAdmin ? [{ id: 'admin-panel', url: `${p}admin.html`, icon: 'fas fa-shield-halved', i18nKey: 'menuAdminPanel' }] : []),
         { id: 'theme', action: 'theme', icon: currentTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun', i18nKey: 'menuTheme' },
         { id: 'language', action: 'language', icon: 'fas fa-globe', i18nKey: 'menuLanguage' }
       ];
@@ -454,6 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
         activeMenuId = 'connect';
       } else if (normPath === '/settings') {
         activeMenuId = 'settings';
+      } else if (normPath === '/admin') {
+        activeMenuId = 'admin-panel';
       } else if (normPath === '/why-choose-me') {
         activeMenuId = 'why';
       } else if (normPath === '/process') {
@@ -2010,25 +2014,6 @@ document.addEventListener('DOMContentLoaded', () => {
           if (user) {
             window.currentUserState = user;
 
-            // Immediately check if this user is the Admin and not already on admin.html
-            const isAdminUser = user.uid === 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' || user.email === 'webworldbd.lmt@gmail.com' || user.email === 'onlyphone678@gmail.com';
-            const normPath = getNormalizedPath();
-            if (isAdminUser && normPath !== '/admin') {
-              if (userDashView) {
-                userDashView.style.display = 'none';
-              }
-              const redirectText = (typeof currentLang !== 'undefined' && currentLang === 'bn') ? 'পুনঃনির্দেশ হচ্ছে...' : 'Redirecting...';
-              if (authAlertMsg && authAlertBox) {
-                authAlertMsg.textContent = redirectText;
-                authAlertBox.className = 'auth-alert-box info';
-                authAlertBox.style.display = 'flex';
-              } else if (window.showToast) {
-                window.showToast(redirectText, 'info');
-              }
-              window.location.replace('/admin.html');
-              return;
-            }
-
             const userName = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
 
             accountNavSpans.forEach(span => { span.textContent = userName; });
@@ -2771,12 +2756,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Unauthenticated - redirect to account.html
             window.location.href = 'account.html';
           } else {
-            const isAdminUser = user.uid === 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' || user.email === 'webworldbd.lmt@gmail.com' || user.email === 'onlyphone678@gmail.com';
-            if (isAdminUser) {
-              window.location.replace('/admin.html');
-              return;
-            }
-
             // Authenticated Client
             window.currentUserState = user;
             const displayName = user.displayName || (user.email ? user.email.split('@')[0] : 'Valued Client');
