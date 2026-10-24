@@ -1960,6 +1960,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function initFirebaseAuthObserver() {
     const userDashView = document.getElementById('dashboard-user-view');
     const authCardContainer = document.getElementById('auth-card-container');
+    const authAlertBox = document.getElementById('auth-alert-box');
+    const authAlertMsg = document.getElementById('auth-alert-message');
     const loginForm = document.getElementById('login-form');
     const regForm = document.getElementById('register-form');
     const forgotForm = document.getElementById('forgot-form');
@@ -1994,6 +1996,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (user) {
             window.currentUserState = user;
+
+            // Immediately check if this user is the Admin
+            const isAdminUser = user.uid === 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' || user.email === 'webworldbd.lmt@gmail.com' || user.email === 'onlyphone678@gmail.com';
+            if (isAdminUser) {
+              if (userDashView) {
+                userDashView.style.display = 'none';
+              }
+              const redirectText = (typeof currentLang !== 'undefined' && currentLang === 'bn') ? 'পুনঃনির্দেশ হচ্ছে...' : 'Redirecting...';
+              if (authAlertMsg && authAlertBox) {
+                authAlertMsg.textContent = redirectText;
+                authAlertBox.className = 'auth-alert-box info';
+                authAlertBox.style.display = 'flex';
+              } else if (window.showToast) {
+                window.showToast(redirectText, 'info');
+              }
+              window.location.replace('/admin.html');
+              return;
+            }
+
             const userName = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
 
             accountNavSpans.forEach(span => { span.textContent = userName; });
@@ -2113,34 +2134,6 @@ document.addEventListener('DOMContentLoaded', () => {
               if (sectionTitle) sectionTitle.style.display = 'none';
 
               if (authCardContainer) authCardContainer.classList.add('authenticated');
-
-              const isAdminUser = user.uid === 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' || user.email === 'webworldbd.lmt@gmail.com' || user.email === 'onlyphone678@gmail.com';
-              let adminBanner = document.getElementById('account-admin-banner');
-
-              if (isAdminUser) {
-                if (!adminBanner) {
-                  adminBanner = document.createElement('div');
-                  adminBanner.id = 'account-admin-banner';
-                  adminBanner.style.cssText = 'background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(59, 130, 246, 0.2) 100%); border: 1px solid var(--accent-blue); border-radius: var(--radius-md, 12px); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.15);';
-                  adminBanner.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 0.85rem;">
-                      <i class="fas fa-shield-halved" style="font-size: 1.75rem; color: var(--accent-blue);"></i>
-                      <div>
-                        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.2rem;">আপনি অ্যাডমিন হিসেবে লগইন করেছেন</h3>
-                        <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">অ্যাডমিন কন্ট্রোল প্যানেলে গিয়ে ক্লায়েন্ট মেসেজ, ইউজার ও রিকোয়েস্ট ম্যানেজ করুন।</p>
-                      </div>
-                    </div>
-                    <a href="admin.html" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; padding: 0.65rem 1.25rem;">
-                      <i class="fas fa-gauge-high"></i> Admin Panel-এ যান
-                    </a>
-                  `;
-                  userDashView.insertBefore(adminBanner, userDashView.firstChild);
-                } else {
-                  adminBanner.style.display = 'flex';
-                }
-              } else if (adminBanner) {
-                adminBanner.style.display = 'none';
-              }
 
               userDashView.style.display = 'block';
 
@@ -2764,6 +2757,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Unauthenticated - redirect to account.html
             window.location.href = 'account.html';
           } else {
+            const isAdminUser = user.uid === 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' || user.email === 'webworldbd.lmt@gmail.com' || user.email === 'onlyphone678@gmail.com';
+            if (isAdminUser) {
+              window.location.replace('/admin.html');
+              return;
+            }
+
             // Authenticated Client
             window.currentUserState = user;
             const displayName = user.displayName || (user.email ? user.email.split('@')[0] : 'Valued Client');
