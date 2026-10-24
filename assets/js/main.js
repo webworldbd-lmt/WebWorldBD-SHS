@@ -637,6 +637,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.updateAdminTabTitleLanguage) {
       window.updateAdminTabTitleLanguage();
     }
+    if (window.refreshAdminUsersTable) {
+      window.refreshAdminUsersTable();
+    }
+    if (window.refreshAdminThreadsList) {
+      window.refreshAdminThreadsList();
+    }
+    if (window.refreshAdminProjectRequests) {
+      window.refreshAdminProjectRequests();
+    }
+    if (window.refreshAdminSupportRequests) {
+      window.refreshAdminSupportRequests();
+    }
 
     // Re-render dynamic sections if present
     if (document.getElementById('services-grid')) renderServices();
@@ -3257,9 +3269,15 @@ Website: https://webworldbd.com
       let totalProjectReqsCount = 0;
       let unreadChatsCount = 0;
 
-      // Realtime Users count
+      // Realtime Users count (excluding Admin)
       mod.onSnapshot(mod.collection(mod.db, 'users'), (snap) => {
-        totalUsersCount = snap.size;
+        let count = 0;
+        snap.forEach(doc => {
+          if (doc.id !== ADMIN_UID && doc.data().email !== ADMIN_EMAIL) {
+            count++;
+          }
+        });
+        totalUsersCount = count;
         const totalUsersEl = document.getElementById('stat-total-users');
         if (totalUsersEl) totalUsersEl.textContent = totalUsersCount;
       });
@@ -3414,14 +3432,44 @@ Website: https://webworldbd.com
       const chatsCol = mod.collection(mod.db, 'chats');
       const q = mod.query(chatsCol, mod.orderBy('lastMessageAt', 'desc'));
 
+      let allThreads = [];
+
+      function refreshAdminThreadsList() {
+        const filterInput = document.getElementById('admin-thread-filter-input');
+        const filterVal = filterInput ? filterInput.value.toLowerCase().trim() : '';
+
+        const filtered = allThreads.filter(t => {
+          const name = (t.userName || t.userEmail || '').toLowerCase();
+          return name.includes(filterVal);
+        });
+
+        // Ensure sorted by lastMessageAt descending
+        filtered.sort((a, b) => {
+          const tA = a.lastMessageAt ? (a.lastMessageAt.seconds ? a.lastMessageAt.seconds * 1000 : new Date(a.lastMessageAt).getTime()) : 0;
+          const tB = b.lastMessageAt ? (b.lastMessageAt.seconds ? b.lastMessageAt.seconds * 1000 : new Date(b.lastMessageAt).getTime()) : 0;
+          return tB - tA;
+        });
+
+        renderAdminThreadsList(filtered);
+      }
+      window.refreshAdminThreadsList = refreshAdminThreadsList;
+
+      const threadFilterInput = document.getElementById('admin-thread-filter-input');
+      if (threadFilterInput) {
+        threadFilterInput.addEventListener('input', () => {
+          refreshAdminThreadsList();
+        });
+      }
+
       mod.onSnapshot(q, (snapshot) => {
         let unreadCount = 0;
-        const threads = [];
+        allThreads = [];
 
         snapshot.forEach(doc => {
+          if (doc.id === ADMIN_UID || doc.data().userEmail === ADMIN_EMAIL) return;
           const data = doc.data();
           data.userId = doc.id;
-          threads.push(data);
+          allThreads.push(data);
           if (data.unreadByAdmin) {
             unreadCount++;
           }
@@ -3438,7 +3486,7 @@ Website: https://webworldbd.com
           }
         }
 
-        renderAdminThreadsList(threads);
+        refreshAdminThreadsList();
       });
 
       // Mobile Back button in Messenger Header
@@ -3450,10 +3498,11 @@ Website: https://webworldbd.com
         });
       }
 
-      // Cache users for "নতুন মেসেজ" user picker
+      // Cache users for "নতুন মেসেজ" user picker (excluding Admin)
       mod.onSnapshot(mod.collection(mod.db, 'users'), (snap) => {
         registeredUsersCache = [];
         snap.forEach(d => {
+          if (d.id === ADMIN_UID || d.data().email === ADMIN_EMAIL) return;
           const u = d.data();
           u.uid = d.id;
           registeredUsersCache.push(u);
@@ -3483,21 +3532,27 @@ Website: https://webworldbd.com
         const timeStr = t.lastMessageAt ? new Date(t.lastMessageAt.seconds ? t.lastMessageAt.seconds * 1000 : t.lastMessageAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
         const initial = (name.trim().charAt(0) || 'C').toUpperCase();
 
+        const userCached = registeredUsersCache.find(u => u.uid === t.userId);
+        const photoUrl = t.photoURL || t.userPhoto || (userCached ? userCached.photoURL : null);
+
+        let avatarHtml = `<div style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">${initial}</div>`;
+        if (photoUrl) {
+          avatarHtml = `<img src="${photoUrl}" alt="${escapeHtml(name)}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><div style="display:none; width: 40px; height: 40px; border-radius: 50%; background: var(--accent-blue); color: #fff; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">${initial}</div>`;
+        }
+
         return `
-          <div class="admin-thread-item ${isActive ? 'active' : ''}" data-user-id="${t.userId}" style="padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-glass); cursor: pointer; display: flex; align-items: center; gap: 0.75rem; background: ${isActive ? 'rgba(56,189,248,0.12)' : (isUnread ? 'rgba(56,189,248,0.05)' : 'transparent')}; position: relative; transition: background 0.2s ease;">
-            <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
-              ${initial}
-            </div>
+          <div class="admin-thread-item ${isActive ? 'active' : ''}" data-user-id="${t.userId}" style="padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-glass); cursor: pointer; display: flex; align-items: center; gap: 0.75rem; background: ${isActive ? 'rgba(56,189,248,0.12)' : (isUnread ? 'rgba(56,189,248,0.06)' : 'transparent')}; position: relative; transition: background 0.2s ease;">
+            ${avatarHtml}
             <div style="flex: 1; min-width: 0;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
-                <span style="font-weight: ${isUnread ? '700' : '600'}; font-size: 0.92rem; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(name)}</span>
+                <span style="font-weight: ${isUnread ? '800' : '600'}; font-size: 0.92rem; color: ${isUnread ? 'var(--accent-blue)' : 'var(--text-main)'}; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(name)}</span>
                 <span style="font-size: 0.72rem; color: var(--text-muted); flex-shrink: 0; margin-left: 0.4rem;">${timeStr}</span>
               </div>
-              <div style="font-size: 0.82rem; color: ${isUnread ? 'var(--text-main)' : 'var(--text-muted)'}; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-weight: ${isUnread ? '600' : 'normal'};">
+              <div style="font-size: 0.82rem; color: ${isUnread ? 'var(--text-main)' : 'var(--text-muted)'}; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-weight: ${isUnread ? '700' : 'normal'}; opacity: ${isUnread ? '1' : '0.85'};">
                 ${t.lastSenderRole === 'admin' ? ' You: ' : ''}${escapeHtml(lastMsg)}
               </div>
             </div>
-            ${isUnread ? `<span style="width: 9px; height: 9px; background: #EF4444; border-radius: 50%; flex-shrink: 0;"></span>` : ''}
+            ${isUnread ? `<span style="width: 10px; height: 10px; background: #EF4444; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px rgba(239,68,68,0.6);"></span>` : ''}
           </div>
         `;
       }).join('');
@@ -3506,16 +3561,21 @@ Website: https://webworldbd.com
         el.addEventListener('click', () => {
           const uid = el.getAttribute('data-user-id');
           const thread = threads.find(t => t.userId === uid);
-          selectAdminThread(uid, thread ? thread.userName : 'Client User', thread ? thread.userEmail : '');
+          const uCached = registeredUsersCache.find(u => u.uid === uid);
+          const pUrl = thread ? (thread.photoURL || thread.userPhoto) : (uCached ? uCached.photoURL : null);
+          selectAdminThread(uid, thread ? thread.userName : 'Client User', thread ? thread.userEmail : '', pUrl);
         });
       });
     }
 
-    async function selectAdminThread(userId, userName, userEmail) {
+    async function selectAdminThread(userId, userName, userEmail, userPhoto) {
       activeAdminSelectedUserId = userId;
 
       const mod = window.FirebaseModule;
       if (!mod || !mod.db) return;
+
+      const userCached = registeredUsersCache.find(u => u.uid === userId);
+      const finalPhoto = userPhoto || (userCached ? userCached.photoURL : null);
 
       // Update UI Header
       const headerName = document.getElementById('admin-chat-active-name');
@@ -3527,7 +3587,16 @@ Website: https://webworldbd.com
 
       if (headerName) headerName.textContent = userName || 'Client User';
       if (headerEmail) headerEmail.textContent = userEmail || userId;
-      if (headerAvatar) headerAvatar.textContent = (userName ? userName.trim().charAt(0) : 'U').toUpperCase();
+
+      if (headerAvatar) {
+        const initial = (userName ? userName.trim().charAt(0) : 'U').toUpperCase();
+        if (finalPhoto) {
+          headerAvatar.innerHTML = `<img src="${finalPhoto}" alt="${escapeHtml(userName)}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><div style="display:none; width: 100%; height: 100%; align-items: center; justify-content: center; font-weight: 700;">${initial}</div>`;
+        } else {
+          headerAvatar.textContent = initial;
+        }
+      }
+
       if (inputArea) inputArea.style.display = 'block';
       if (backBtn) backBtn.style.display = 'inline-flex';
       if (layout) layout.classList.add('mobile-thread-open');
@@ -3562,18 +3631,36 @@ Website: https://webworldbd.com
       }
 
       let html = '';
+      let lastDateStr = null;
+
       snapshot.forEach(doc => {
         const data = doc.data();
         const role = data.senderRole || 'user';
         const isAdmin = role === 'admin';
-        const timeStr = data.createdAt ? new Date(data.createdAt.seconds ? data.createdAt.seconds * 1000 : data.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+        const msgDateObj = data.createdAt ? new Date(data.createdAt.seconds ? data.createdAt.seconds * 1000 : data.createdAt) : new Date();
+        const timeStr = msgDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateStr = msgDateObj.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+
+        if (dateStr !== lastDateStr) {
+          lastDateStr = dateStr;
+          html += `
+            <div style="text-align: center; margin: 0.85rem 0 0.35rem;">
+              <span style="background: rgba(255,255,255,0.08); border: 1px solid var(--border-glass); padding: 0.25rem 0.85rem; border-radius: 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">
+                ${dateStr}
+              </span>
+            </div>
+          `;
+        }
+
+        const readTick = (isAdmin && data.read) ? `<span style="font-size: 0.75rem; color: var(--accent-blue); margin-left: 0.3rem;" title="Seen">✓✓</span>` : '';
 
         html += `
           <div class="chat-msg-row ${isAdmin ? 'msg-user' : 'msg-admin'}">
             <span class="chat-sender-name">${isAdmin ? 'SHAFAET HOSSEN SARIP (Admin)' : 'Client'}</span>
             <div class="chat-bubble">
               ${escapeHtml(data.text || '')}
-              <span class="chat-msg-time">${timeStr}</span>
+              <span class="chat-msg-time">${timeStr} ${readTick}</span>
             </div>
           </div>
         `;
@@ -3583,8 +3670,26 @@ Website: https://webworldbd.com
       container.scrollTop = container.scrollHeight;
     }
 
-    // Chat reply form submit
+    // Chat reply form submit & Enter to send logic
     const replyForm = document.getElementById('admin-chat-reply-form');
+    const replyInput = document.getElementById('admin-chat-reply-input');
+    const replySendBtn = document.getElementById('admin-chat-send-btn');
+
+    if (replyInput && replySendBtn) {
+      replyInput.addEventListener('input', () => {
+        replySendBtn.disabled = !replyInput.value.trim();
+      });
+
+      replyInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (replyInput.value.trim()) {
+            replyForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          }
+        }
+      });
+    }
+
     if (replyForm) {
       replyForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -3595,6 +3700,7 @@ Website: https://webworldbd.com
 
         if (!text) return;
         input.value = '';
+        if (replySendBtn) replySendBtn.disabled = true;
 
         const mod = window.FirebaseModule;
         if (!mod || !mod.db) return;
@@ -3713,15 +3819,27 @@ Website: https://webworldbd.com
 
       let allUsers = [];
 
+      function refreshAdminUsersTable() {
+        const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        const filtered = allUsers.filter(u => {
+          const name = (u.displayName || u.fullName || '').toLowerCase();
+          const email = (u.email || '').toLowerCase();
+          return name.includes(q) || email.includes(q);
+        });
+        renderUsersTable(filtered);
+      }
+      window.refreshAdminUsersTable = refreshAdminUsersTable;
+
       mod.onSnapshot(mod.collection(mod.db, 'users'), (snap) => {
         allUsers = [];
         snap.forEach(doc => {
+          if (doc.id === ADMIN_UID || doc.data().email === ADMIN_EMAIL) return;
           const data = doc.data();
           data.uid = doc.id;
           allUsers.push(data);
         });
 
-        renderUsersTable(allUsers);
+        refreshAdminUsersTable();
       });
 
       if (searchInput) {
@@ -3737,11 +3855,15 @@ Website: https://webworldbd.com
       }
 
       function renderUsersTable(users) {
+        const noUsersMsg = translations[currentLang] && translations[currentLang].adminUsersNoUsers ? translations[currentLang].adminUsersNoUsers : 'No registered users found.';
+        const msgBtnText = translations[currentLang] && translations[currentLang].adminUsersBtnMessage ? translations[currentLang].adminUsersBtnMessage : 'Send Message';
+        const delBtnText = translations[currentLang] && translations[currentLang].adminUsersBtnDelete ? translations[currentLang].adminUsersBtnDelete : 'Delete';
+
         if (users.length === 0) {
           tbody.innerHTML = `
             <tr>
-              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                কোন রেজিস্টার্ড ইউজার পাওয়া যায়নি।
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;" data-i18n="adminUsersNoUsers">
+                ${noUsersMsg}
               </td>
             </tr>
           `;
@@ -3772,10 +3894,10 @@ Website: https://webworldbd.com
               <td>
                 <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                   <button type="button" class="btn btn-primary btn-admin-msg-user" data-uid="${u.uid}" data-name="${escapeHtml(name)}" data-email="${escapeHtml(email)}" style="padding: 0.35rem 0.65rem; font-size: 0.78rem;">
-                    <i class="fas fa-comment"></i> মেসেজ পাঠান
+                    <i class="fas fa-comment"></i> <span data-i18n="adminUsersBtnMessage">${msgBtnText}</span>
                   </button>
                   <button type="button" class="btn btn-danger-outline btn-admin-delete-user" data-uid="${u.uid}" data-name="${escapeHtml(name)}" style="padding: 0.35rem 0.65rem; font-size: 0.78rem;">
-                    <i class="fas fa-trash"></i> ডিলিট
+                    <i class="fas fa-trash"></i> <span data-i18n="adminUsersBtnDelete">${delBtnText}</span>
                   </button>
                 </div>
               </td>
