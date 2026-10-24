@@ -616,9 +616,22 @@ document.addEventListener('DOMContentLoaded', () => {
       radio.checked = (radio.value === lang);
     });
 
+    // Re-sync admin header name & photo if on admin panel
+    if (window.syncAdminHeaderInfo) {
+      window.syncAdminHeaderInfo();
+    }
+
     // Re-render three-dots menu
     if (window.refreshThreeDotsMenu) {
       window.refreshThreeDotsMenu();
+    }
+
+    // Re-render admin recent activity feed and admin sections if on admin page
+    if (window.refreshAdminRecentActivityFeed) {
+      window.refreshAdminRecentActivityFeed();
+    }
+    if (window.updateAdminTabTitleLanguage) {
+      window.updateAdminTabTitleLanguage();
     }
 
     // Re-render dynamic sections if present
@@ -1997,9 +2010,10 @@ document.addEventListener('DOMContentLoaded', () => {
           if (user) {
             window.currentUserState = user;
 
-            // Immediately check if this user is the Admin
+            // Immediately check if this user is the Admin and not already on admin.html
             const isAdminUser = user.uid === 'dS9uZZToHTUPP1Q3DiWiG25D3Xt2' || user.email === 'webworldbd.lmt@gmail.com' || user.email === 'onlyphone678@gmail.com';
-            if (isAdminUser) {
+            const normPath = getNormalizedPath();
+            if (isAdminUser && normPath !== '/admin') {
               if (userDashView) {
                 userDashView.style.display = 'none';
               }
@@ -3125,12 +3139,24 @@ Website: https://webworldbd.com
 
         if (adminLoader) adminLoader.style.display = 'none';
 
-        // Update Admin Header Profile details
-        const adminName = user.displayName || 'SHAFAET HOSSEN SARIP';
-        ['admin-sidebar-name', 'admin-topbar-name', 'admin-settings-name'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.textContent = adminName;
-        });
+        // Helper function to update Admin Name & Photo consistently across all admin UI elements
+        function syncAdminHeaderInfo() {
+          const currentAdmin = window.currentUserState || user;
+          const adminName = (currentAdmin && currentAdmin.displayName) ? currentAdmin.displayName : 'SHAFAET HOSSEN SARIP';
+          ['admin-sidebar-name', 'admin-topbar-name', 'admin-settings-name'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = adminName;
+          });
+          if (currentAdmin && currentAdmin.photoURL) {
+            ['admin-sidebar-avatar', 'admin-topbar-avatar', 'admin-settings-avatar'].forEach(id => {
+              const img = document.getElementById(id);
+              if (img) img.src = currentAdmin.photoURL;
+            });
+          }
+        }
+
+        window.syncAdminHeaderInfo = syncAdminHeaderInfo;
+        syncAdminHeaderInfo();
 
         if (document.getElementById('admin-settings-email')) {
           document.getElementById('admin-settings-email').textContent = user.email || ADMIN_EMAIL;
@@ -3184,19 +3210,29 @@ Website: https://webworldbd.com
         });
         sections[tabId].style.display = 'block';
 
-        // Update Page Title
-        const pageTitleEl = document.getElementById('admin-page-title');
-        if (pageTitleEl) {
-          const titles = {
-            'dashboard': 'ড্যাশবোর্ড (Overview)',
-            'messenger': 'মেসেঞ্জার (Live Chat)',
-            'users': 'ইউজার ম্যানেজমেন্ট',
-            'project-requests': 'প্রজেক্ট রিকোয়েস্ট',
-            'support-requests': 'সাপোর্ট রিকোয়েস্ট',
-            'settings': 'সেটিংস'
+        // Update Page Title with current language support
+        let currentAdminActiveTab = tabId;
+        function updateAdminTabTitleLanguage() {
+          const pageTitleEl = document.getElementById('admin-page-title');
+          if (!pageTitleEl) return;
+
+          const keyMap = {
+            'dashboard': 'adminNavDashboard',
+            'messenger': 'adminNavMessenger',
+            'users': 'adminNavUsers',
+            'project-requests': 'adminNavProjectRequests',
+            'support-requests': 'adminNavSupportRequests',
+            'settings': 'adminNavSettings'
           };
-          pageTitleEl.textContent = titles[tabId] || 'অ্যাডমিন প্যানেল';
+
+          const key = keyMap[currentAdminActiveTab];
+          if (key && translations[currentLang] && translations[currentLang][key]) {
+            pageTitleEl.textContent = translations[currentLang][key];
+          }
         }
+
+        window.updateAdminTabTitleLanguage = updateAdminTabTitleLanguage;
+        updateAdminTabTitleLanguage();
 
         // Mobile sidebar close on click
         const sidebar = document.getElementById('dash-sidebar');
@@ -3257,6 +3293,53 @@ Website: https://webworldbd.com
         if (el) el.textContent = totalProjectReqsCount;
       });
 
+      // Aggregated Activity Feed across collections
+      let chatActivities = [];
+      let projectActivities = [];
+      let supportActivities = [];
+
+      function renderAggregatedRecentActivity() {
+        const activityContainer = document.getElementById('admin-recent-activity-container');
+        if (!activityContainer) return;
+
+        const allActivities = [...chatActivities, ...projectActivities, ...supportActivities];
+        allActivities.sort((a, b) => (b.timeMs || 0) - (a.timeMs || 0));
+        const top5 = allActivities.slice(0, 5);
+
+        const emptyText = currentLang === 'bn' ? 'কোনো সাম্প্রতিক কার্যক্রম নেই।' : 'No recent activity found.';
+
+        if (top5.length === 0) {
+          activityContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1.5rem;" data-i18n="adminNoRecentActivity">${emptyText}</div>`;
+        } else {
+          activityContainer.innerHTML = top5.map(act => {
+            const timeStr = act.timeMs ? new Date(act.timeMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent';
+            const initial = (act.userName.trim().charAt(0) || 'U').toUpperCase();
+
+            let typeIcon = 'fas fa-message';
+            if (act.type === 'project') typeIcon = 'fas fa-rocket';
+            if (act.type === 'support') typeIcon = 'fas fa-headset';
+
+            return `
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border-glass);">
+                <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
+                  <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--accent-blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">
+                    ${initial}
+                  </div>
+                  <div style="min-width: 0;">
+                    <div style="font-weight: 700; font-size: 0.92rem; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                      ${escapeHtml(act.userName)} <span style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted);"><i class="${typeIcon}"></i></span>
+                    </div>
+                    <div style="font-size: 0.82rem; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(act.text)}</div>
+                  </div>
+                </div>
+                <span style="font-size: 0.78rem; color: var(--text-muted); flex-shrink: 0;"><i class="fas fa-clock"></i> ${timeStr}</span>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+      window.refreshAdminRecentActivityFeed = renderAggregatedRecentActivity;
+
       // Realtime Unread Chats & Today's messages
       const chatsCol = mod.collection(mod.db, 'chats');
       mod.onSnapshot(chatsCol, (snap) => {
@@ -3265,7 +3348,7 @@ Website: https://webworldbd.com
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
-        const recentActivities = [];
+        chatActivities = [];
 
         snap.forEach(d => {
           const chatData = d.data();
@@ -3276,7 +3359,7 @@ Website: https://webworldbd.com
             if (msgTime >= startOfToday) {
               todayMsgs++;
             }
-            recentActivities.push({
+            chatActivities.push({
               userName: chatData.userName || chatData.userEmail || 'Client',
               text: chatData.lastMessage || 'Sent a message',
               timeMs: msgTime,
@@ -3291,34 +3374,56 @@ Website: https://webworldbd.com
         const todayMsgsEl = document.getElementById('stat-today-messages');
         if (todayMsgsEl) todayMsgsEl.textContent = todayMsgs;
 
-        // Render Recent Activity Feed
-        recentActivities.sort((a, b) => b.timeMs - a.timeMs);
-        const top5 = recentActivities.slice(0, 5);
+        renderAggregatedRecentActivity();
+      }, (err) => {
+        console.error('Chats overview snapshot error:', err);
+        chatActivities = [];
+        renderAggregatedRecentActivity();
+      });
 
-        const activityContainer = document.getElementById('admin-recent-activity-container');
-        if (activityContainer) {
-          if (top5.length === 0) {
-            activityContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">কোন সাম্প্রতিক কার্যক্রম পাওয়া যায়নি।</div>`;
-          } else {
-            activityContainer.innerHTML = top5.map(act => {
-              const timeStr = act.timeMs ? new Date(act.timeMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent';
-              const initial = (act.userName.trim().charAt(0) || 'U').toUpperCase();
-
-              return `
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border-glass);">
-                  <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
-                    <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--accent-blue); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">${initial}</div>
-                    <div style="min-width: 0;">
-                      <div style="font-weight: 700; font-size: 0.92rem; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(act.userName)}</div>
-                      <div style="font-size: 0.82rem; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(act.text)}</div>
-                    </div>
-                  </div>
-                  <span style="font-size: 0.78rem; color: var(--text-muted); flex-shrink: 0;"><i class="fas fa-clock"></i> ${timeStr}</span>
-                </div>
-              `;
-            }).join('');
+      // Project Requests activity feed integration
+      mod.onSnapshot(pReqsCol, (snap) => {
+        projectActivities = [];
+        snap.forEach(d => {
+          const req = d.data();
+          if (req.submittedAt) {
+            const timeMs = new Date(req.submittedAt).getTime();
+            projectActivities.push({
+              userName: req.name || req.email || 'Client',
+              text: `Project Request: ${req.projectType || 'Custom Project'}`,
+              timeMs: timeMs,
+              type: 'project'
+            });
           }
-        }
+        });
+        renderAggregatedRecentActivity();
+      }, (err) => {
+        console.error('Project requests overview snapshot error:', err);
+        projectActivities = [];
+        renderAggregatedRecentActivity();
+      });
+
+      // Support Requests activity feed integration
+      const sReqsCol = mod.collection(mod.db, 'supportRequests');
+      mod.onSnapshot(sReqsCol, (snap) => {
+        supportActivities = [];
+        snap.forEach(d => {
+          const supp = d.data();
+          if (supp.submittedAt) {
+            const timeMs = new Date(supp.submittedAt).getTime();
+            supportActivities.push({
+              userName: supp.name || supp.email || 'Client',
+              text: `Support Ticket: ${supp.subject || 'Support Request'}`,
+              timeMs: timeMs,
+              type: 'support'
+            });
+          }
+        });
+        renderAggregatedRecentActivity();
+      }, (err) => {
+        console.error('Support requests overview snapshot error:', err);
+        supportActivities = [];
+        renderAggregatedRecentActivity();
       });
     }
 
