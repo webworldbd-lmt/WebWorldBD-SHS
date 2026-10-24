@@ -153,15 +153,15 @@
           <!-- Welcome Banner Section -->
           <div class="dash-welcome-card">
             <div class="dash-welcome-text">
-              <h2>System Overview & Analytics 🚀</h2>
-              <p>Welcome to WebWorldBD Admin Panel. Monitor users, live chat inquiries, project requests, and support tickets in real-time.</p>
+              <h2 data-i18n="adminWelcomeTitle">System Overview & Analytics 🚀</h2>
+              <p data-i18n="adminWelcomeDesc">Welcome to WebWorldBD Admin Panel. Monitor users, live chat inquiries, project requests, and support tickets in real-time.</p>
             </div>
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
               <a href="#messenger" class="btn btn-primary" data-admin-tab-trigger="messenger">
-                <i class="fas fa-comments"></i> ওপেন মেসেঞ্জার
+                <i class="fas fa-comments"></i> <span data-i18n="adminOpenMessenger">ওপেন মেসেঞ্জার</span>
               </a>
               <a href="#project-requests" class="btn btn-secondary" data-admin-tab-trigger="project-requests">
-                <i class="fas fa-rocket"></i> প্রজেক্ট রিকোয়েস্ট
+                <i class="fas fa-rocket"></i> <span data-i18n="adminProjectRequestsBtn">প্রজেক্ট রিকোয়েস্ট</span>
               </a>
             </div>
           </div>
@@ -216,14 +216,14 @@
           <!-- Recent Activity Section ("সাম্প্রতিক কার্যক্রম") -->
           <div class="dash-table-card" style="margin-top: 1.5rem;">
             <div class="dash-card-header">
-              <h3 class="dash-card-title"><i class="fas fa-clock-rotate-left" style="color: var(--accent-blue);"></i> সাম্প্রতিক কার্যক্রম (Recent Activity)</h3>
-              <span class="badge-pill"><i class="fas fa-bolt"></i> Live Activity Feed</span>
+              <h3 class="dash-card-title"><i class="fas fa-clock-rotate-left" style="color: var(--accent-blue);"></i> <span data-i18n="adminRecentActivityTitle">সাম্প্রতিক কার্যক্রম (Recent Activity)</span></h3>
+              <span class="badge-pill"><i class="fas fa-bolt"></i> <span data-i18n="adminLiveActivityBadge">Live Activity Feed</span></span>
             </div>
 
             <div id="admin-recent-activity-container" style="padding: 1rem 1.5rem;">
               <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
                 <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--accent-blue); margin-bottom: 0.5rem; display: block;"></i>
-                কার্যক্রম লোড হচ্ছে...
+                <span data-i18n="adminRecentActivityLoading">কার্যক্রম লোড হচ্ছে...</span>
               </div>
             </div>
           </div>
@@ -235,22 +235,22 @@
         <section id="admin-section-messenger" class="admin-tab-section" style="display: none;">
           <div class="dash-table-card" style="padding: 0; overflow: hidden; border-radius: var(--radius-lg);">
             <div class="dash-card-header" style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-glass); flex-wrap: wrap; gap: 1rem; background: var(--bg-glass);">
-              <h3 class="dash-card-title"><i class="fas fa-comments" style="color: var(--accent-blue);"></i> লাইভ চ্যাট ইনবক্স</h3>
+              <h3 class="dash-card-title"><i class="fas fa-comments" style="color: var(--accent-blue);"></i> <span data-i18n="adminLiveChatInbox">লাইভ চ্যাট ইনবক্স</span></h3>
               <button type="button" class="btn btn-primary" id="btn-admin-new-chat">
-                <i class="fas fa-plus"></i> নতুন মেসেজ
+                <i class="fas fa-plus"></i> <span data-i18n="adminNewMessageBtn">নতুন মেসেজ</span>
               </button>
             </div>
 
             <div class="admin-messenger-grid" id="admin-chat-layout">
               <!-- Left Thread List Sidebar -->
               <div class="admin-threads-sidebar" id="admin-threads-sidebar">
-                <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-glass); font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+                <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-glass); font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;" data-i18n="adminClientChatList">
                   ক্লায়েন্ট চ্যাট লিস্ট
                 </div>
                 <div id="admin-threads-list-container" style="flex: 1; overflow-y: auto;">
                   <div style="padding: 2rem; text-align: center; color: var(--text-muted);">
                     <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--accent-blue); margin-bottom: 0.5rem; display: block;"></i>
-                    চ্যাট লিস্ট লোড হচ্ছে...
+                    <span data-i18n="adminLoadingChats">চ্যাট লিস্ট লোড হচ্ছে...</span>
                   </div>
                 </div>
               </div>
@@ -267,8 +267,8 @@
                       U
                     </div>
                     <div style="min-width: 0;">
-                      <div id="admin-chat-active-name" style="font-weight: 700; font-size: 1.05rem; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">একটি চ্যাট সিলেক্ট করুন</div>
-                      <div id="admin-chat-active-email" style="font-size: 0.8rem; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">ক্লিক করে মেসেজ স্ট্রিম দেখুন</div>
+                      <div id="admin-chat-active-name" style="font-weight: 700; font-size: 1.05rem; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" data-i18n="adminSelectChatHeader">একটি চ্যাট সিলেক্ট করুন</div>
+                      <div id="admin-chat-active-email" style="font-size: 0.8rem; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" data-i18n="adminSelectChatSub">ক্লিক করে মেসেজ স্ট্রিম দেখুন</div>
                     </div>
                   </div>
                 </div>
@@ -276,15 +276,15 @@
                 <div id="admin-chat-messages-box" style="flex: 1; padding: 1.25rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.85rem;">
                   <div style="margin: auto; text-align: center; color: var(--text-muted); padding: 3rem;">
                     <i class="fas fa-comments" style="font-size: 3rem; color: var(--accent-blue); margin-bottom: 1rem; display: block;"></i>
-                    <p style="font-size: 1.05rem; font-weight: 600;">মেসেজ দেখতে বাম পাশ থেকে চ্যাট নির্বাচন করুন</p>
+                    <p style="font-size: 1.05rem; font-weight: 600;" data-i18n="adminSelectChatPrompt">মেসেজ দেখতে বাম পাশ থেকে চ্যাট নির্বাচন করুন</p>
                   </div>
                 </div>
 
                 <div id="admin-chat-input-area" style="padding: 1rem; border-top: 1px solid var(--border-glass); background: var(--bg-glass); display: none;">
                   <form id="admin-chat-reply-form" style="display: flex; gap: 0.6rem;">
-                    <input type="text" id="admin-chat-reply-input" class="form-control" placeholder="ক্লায়েন্টকে উত্তর দিন..." autocomplete="off" style="border-radius: 24px;" required />
+                    <input type="text" id="admin-chat-reply-input" class="form-control" placeholder="ক্লায়েন্টকে উত্তর দিন..." data-i18n="adminReplyPlaceholder" autocomplete="off" style="border-radius: 24px;" required />
                     <button type="submit" class="btn btn-primary" style="border-radius: 24px; padding: 0.65rem 1.4rem;">
-                      <i class="fas fa-paper-plane"></i> পাঠান
+                      <i class="fas fa-paper-plane"></i> <span data-i18n="adminSendBtn">পাঠান</span>
                     </button>
                   </form>
                 </div>
@@ -299,9 +299,9 @@
         <section id="admin-section-users" class="admin-tab-section" style="display: none;">
           <div class="dash-table-card">
             <div class="dash-card-header" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between;">
-              <h3 class="dash-card-title"><i class="fas fa-users" style="color: var(--accent-blue);"></i> রেজিস্টার্ড ইউজার তালিকা</h3>
+              <h3 class="dash-card-title"><i class="fas fa-users" style="color: var(--accent-blue);"></i> <span data-i18n="adminUsersListTitle">রেজিস্টার্ড ইউজার তালিকা</span></h3>
               <div style="position: relative; max-width: 320px; width: 100%;">
-                <input type="text" id="admin-users-search-input" class="form-control" placeholder="নাম বা ইমেইল দিয়ে খুঁজুন..." style="padding-left: 2.4rem; border-radius: var(--radius-md); font-size: 0.88rem;">
+                <input type="text" id="admin-users-search-input" class="form-control" placeholder="নাম বা ইমেইল দিয়ে খুঁজুন..." data-i18n="adminUsersSearchPlaceholder" style="padding-left: 2.4rem; border-radius: var(--radius-md); font-size: 0.88rem;">
                 <i class="fas fa-search" style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
               </div>
             </div>
@@ -323,7 +323,7 @@
                   <tr>
                     <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
                       <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 0.5rem; display: block; color: var(--accent-blue);"></i>
-                      ইউজার ডেটা লোড হচ্ছে...
+                      <span data-i18n="adminUsersLoading">ইউজার ডেটা লোড হচ্ছে...</span>
                     </td>
                   </tr>
                 </tbody>
@@ -338,14 +338,14 @@
         <section id="admin-section-project-requests" class="admin-tab-section" style="display: none;">
           <div class="dash-table-card">
             <div class="dash-card-header" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between;">
-              <h3 class="dash-card-title"><i class="fas fa-rocket" style="color: var(--accent-blue);"></i> প্রজেক্ট রিকোয়েস্টসমূহ (Project Requests)</h3>
+              <h3 class="dash-card-title"><i class="fas fa-rocket" style="color: var(--accent-blue);"></i> <span data-i18n="adminProjectRequestsTitle">প্রজেক্ট রিকোয়েস্টসমূহ (Project Requests)</span></h3>
               <span class="badge-pill" id="admin-project-requests-count-badge"><i class="fas fa-inbox"></i> 0 Requests</span>
             </div>
 
             <div id="admin-project-requests-list-container" style="padding: 1.25rem;">
               <div style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
                 <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--accent-blue); margin-bottom: 0.5rem; display: block;"></i>
-                প্রজেক্ট রিকোয়েস্ট লোড হচ্ছে...
+                <span data-i18n="adminProjectRequestsLoading">প্রজেক্ট রিকোয়েস্ট লোড হচ্ছে...</span>
               </div>
             </div>
           </div>
@@ -357,14 +357,14 @@
         <section id="admin-section-support-requests" class="admin-tab-section" style="display: none;">
           <div class="dash-table-card">
             <div class="dash-card-header" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between;">
-              <h3 class="dash-card-title"><i class="fas fa-headset" style="color: var(--accent-orange);"></i> সাপোর্ট রিকোয়েস্টসমূহ (Support Requests)</h3>
+              <h3 class="dash-card-title"><i class="fas fa-headset" style="color: var(--accent-orange);"></i> <span data-i18n="adminSupportRequestsTitle">সাপোর্ট রিকোয়েস্টসমূহ (Support Requests)</span></h3>
               <span class="badge-pill" id="admin-support-requests-count-badge" style="background: rgba(245,158,11,0.15); color: #F59E0B; border-color: rgba(245,158,11,0.3);"><i class="fas fa-life-ring"></i> 0 Tickets</span>
             </div>
 
             <div id="admin-support-requests-list-container" style="padding: 1.25rem;">
               <div style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
                 <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; color: var(--accent-orange); margin-bottom: 0.5rem; display: block;"></i>
-                সাপোর্ট টিকিটের তথ্য লোড হচ্ছে...
+                <span data-i18n="adminSupportRequestsLoading">সাপোর্ট টিকিটের তথ্য লোড হচ্ছে...</span>
               </div>
             </div>
           </div>
@@ -376,7 +376,7 @@
         <section id="admin-section-settings" class="admin-tab-section" style="display: none;">
           <div class="glass-card" style="padding: 2.25rem; max-width: 720px; margin: 0 auto;">
             <div class="dash-card-header" style="margin-bottom: 1.5rem;">
-              <h3 class="dash-card-title"><i class="fas fa-user-shield" style="color: var(--accent-blue);"></i> অ্যাডমিন প্রোফাইল ও সেটিংস</h3>
+              <h3 class="dash-card-title"><i class="fas fa-user-shield" style="color: var(--accent-blue);"></i> <span data-i18n="adminSettingsTitle">অ্যাডমিন প্রোফাইল ও সেটিংস</span></h3>
             </div>
 
             <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-glass);">
@@ -384,23 +384,23 @@
               <div>
                 <h3 id="admin-settings-name" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.2rem;">SHAFAET HOSSEN SARIP</h3>
                 <p id="admin-settings-email" style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">webworldbd.lmt@gmail.com</p>
-                <span class="badge-pill" style="font-size: 0.75rem;"><i class="fas fa-shield-halved"></i> Super Admin Account</span>
+                <span class="badge-pill" style="font-size: 0.75rem;"><i class="fas fa-shield-halved"></i> <span data-i18n="adminSuperAdminRole">Super Admin Account</span></span>
               </div>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 1.25rem;">
               <button type="button" class="btn btn-secondary" id="btn-admin-edit-profile" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.25rem;">
-                <span><i class="fas fa-pen-to-square" style="color: var(--accent-blue); margin-right: 0.5rem;"></i> প্রোফাইল এডিট করুন (Name & Photo)</span>
+                <span><i class="fas fa-pen-to-square" style="color: var(--accent-blue); margin-right: 0.5rem;"></i> <span data-i18n="adminEditProfileBtn">প্রোফাইল এডিট করুন (Name & Photo)</span></span>
                 <i class="fas fa-chevron-right"></i>
               </button>
 
               <a href="settings.html" class="btn btn-secondary" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1.25rem; text-decoration: none;">
-                <span><i class="fas fa-sliders" style="color: var(--accent-purple); margin-right: 0.5rem;"></i> সাইটের গ্লোবাল সেটিংস (Theme / Language / Clear Cache)</span>
+                <span><i class="fas fa-sliders" style="color: var(--accent-purple); margin-right: 0.5rem;"></i> <span data-i18n="adminGlobalSettingsLink">সাইটের গ্লোবাল সেটিংস (Theme / Language / Clear Cache)</span></span>
                 <i class="fas fa-chevron-right"></i>
               </a>
 
               <button type="button" class="btn btn-danger-outline" id="btn-admin-logout" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.85rem 1.25rem; margin-top: 1rem;">
-                <i class="fas fa-right-from-bracket"></i> অ্যাডমিন অ্যাকাউন্ট লগআউট করুন
+                <i class="fas fa-right-from-bracket"></i> <span data-i18n="adminLogoutBtn">অ্যাডমিন অ্যাকাউন্ট লগআউট করুন</span>
               </button>
             </div>
           </div>
@@ -414,24 +414,24 @@
   <div class="settings-modal-overlay" id="admin-new-chat-modal">
     <div class="settings-modal-card glass-card" style="max-width: 520px; width: 100%;">
       <div class="dash-card-header" style="margin-bottom: 1.25rem;">
-        <h3 class="dash-card-title"><i class="fas fa-comment-medical" style="color: var(--accent-blue);"></i> নতুন ক্লায়েন্ট চ্যাট শুরু করুন</h3>
+        <h3 class="dash-card-title"><i class="fas fa-comment-medical" style="color: var(--accent-blue);"></i> <span data-i18n="adminStartChatModalTitle">নতুন ক্লায়েন্ট চ্যাট শুরু করুন</span></h3>
         <button type="button" class="alert-close-btn btn-modal-cancel" aria-label="Close modal">
           <i class="fas fa-times"></i>
         </button>
       </div>
 
       <div style="margin-bottom: 1rem;">
-        <input type="text" id="admin-user-search-input" class="form-control" placeholder="ব্যবহারকারীর নাম বা ইমেইল দিয়ে খুঁজুন..." style="border-radius: var(--radius-md);">
+        <input type="text" id="admin-user-search-input" class="form-control" placeholder="ব্যবহারকারীর নাম বা ইমেইল দিয়ে খুঁজুন..." data-i18n="adminSearchUserPlaceholder" style="border-radius: var(--radius-md);">
       </div>
 
       <div id="admin-users-pick-list" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem;">
         <div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
-          <i class="fas fa-spinner fa-spin" style="color: var(--accent-blue);"></i> ইউজার লিস্ট লোড হচ্ছে...
+          <i class="fas fa-spinner fa-spin" style="color: var(--accent-blue);"></i> <span data-i18n="adminUsersLoadingModal">ইউজার লিস্ট লোড হচ্ছে...</span>
         </div>
       </div>
 
       <div style="display: flex; justify-content: flex-end;">
-        <button type="button" class="btn btn-secondary btn-modal-cancel" style="padding: 0.6rem 1.25rem;">বন্ধ করুন</button>
+        <button type="button" class="btn btn-secondary btn-modal-cancel" style="padding: 0.6rem 1.25rem;" data-i18n="adminCloseModalBtn">বন্ধ করুন</button>
       </div>
     </div>
   </div>
